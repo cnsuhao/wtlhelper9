@@ -128,7 +128,7 @@ struct InsertInclude : public InsertionPoint
 	InsertInclude(int iType = INSERT_POINT_INCLUDE);
 	~InsertInclude();
 private:
-	CComPtr<EnvDTE::CodeElement> pInclude;
+	CComPtr<EnvDTE::CodeElement> m_pInclude;
 };
 
 struct InsertPointDDXSupport : public InsertionPoint

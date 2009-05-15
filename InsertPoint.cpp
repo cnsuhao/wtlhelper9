@@ -326,17 +326,18 @@ HRESULT InsertInclude::Insert(VSClass* pClass, int Step)
 			CComPtr<VCCodeModelLibrary::VCCodeInclude> spDummy;
 			hr = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name), Pos, &spDummy);
 			if (SUCCEEDED(hr)) {
-				hr = spDummy->QueryInterface(&pInclude);
+				m_pInclude.Release();
+				hr = spDummy->QueryInterface(&m_pInclude);
 			}
 		}
 	}
 	if (Step == INSERT_STEP_GLOBAL)
 	{
-		if (pInclude != NULL && !AdditionalMacro.IsEmpty())
+		if (m_pInclude != NULL && !AdditionalMacro.IsEmpty())
 		{
 			CComPtr<EnvDTE::TextPoint> pTextPoint;
 			CComPtr<EnvDTE::EditPoint> pEditPoint;
-			pInclude->get_StartPoint(&pTextPoint);
+			m_pInclude->get_StartPoint(&pTextPoint);
 			pTextPoint->CreateEditPoint(&pEditPoint);
 			_bstr_t MacroText = CString(_T("#define ")) + AdditionalMacro + _T("\r\n");
 			pEditPoint->Insert(MacroText);

@@ -38,13 +38,15 @@ CDDXManager::~CDDXManager(void)
 
 bool CDDXManager::InsertNewMap(CString MapName)
 {
+	HRESULT hr = E_FAIL;
 	VSMap* pNewMap;
 	pNewMap = new VSMap;
 
 	pNewMap->Name = MapName;
 	VSParameter* pParam = new VSParameter;
 	
-	VCCodeModelLibrary::VCCodeClassPtr pClass = m_pClass->pElement;
+	CComPtr<VCCodeModelLibrary::VCCodeClass> pClass;
+	hr = m_pClass->pElement->QueryInterface(&pClass);
 	_bstr_t DisplayName;
 	pClass->get_DisplayName(DisplayName.GetAddress());
 	pParam->Name = (LPCTSTR)DisplayName;
@@ -64,9 +66,9 @@ void CDDXManager::SetAtlDDX(VSClass* pClass, bool bUseFloat /* = false */)
 
 bool CDDXManager::CheckCString(VSClass* pClass)
 {
-	EnvDTE::ProjectPtr pProject;
-	EnvDTE::ProjectItemPtr pProjectItem;
-	EnvDTE::GlobalsPtr pProjGlobals;
+	CComPtr<EnvDTE::Project> pProject;
+	CComPtr<EnvDTE::ProjectItem> pProjectItem;
+	CComPtr<EnvDTE::Globals> pProjGlobals;
 
 	pClass->pElement->get_ProjectItem(&pProjectItem);
 	pProjectItem->get_ContainingProject(&pProject);
@@ -122,7 +124,7 @@ bool CDDXManager::CheckCString(VSClass* pClass)
 
 	//показать диалог в котором можно будет выбрать CString используемый
 	CTypeCStringDlg dlg;
-	EnvDTE::ProjectItemPtr pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+	CComPtr<EnvDTE::ProjectItem> pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 	if (pStdAfxFile != NULL)
 	{
 		dlg.m_bStdAfx = true;
@@ -153,7 +155,7 @@ bool CDDXManager::CheckCString(VSClass* pClass)
 	return true;
 }
 
-void CDDXManager::InsertAtlCString(EnvDTE::ProjectPtr pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints)
+void CDDXManager::InsertAtlCString(CComPtr<EnvDTE::Project> pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints)
 {
 	InsertInclude* pInsInclude = new InsertInclude;
 	VSInclude* pInclude = new VSInclude;
@@ -161,12 +163,12 @@ void CDDXManager::InsertAtlCString(EnvDTE::ProjectPtr pProject, CSmartAtlArray<I
 	pInsInclude->AdditionalMacro = _T("_WTL_NO_CSTRING");
 	pInsInclude->pElement = pInclude;
 	pInsInclude->Pos = 0;
-	pInsInclude->pProjectFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+	pInsInclude->pProjectFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 	CurInsPoints.Add(pInsInclude);
 
 }
 
-void CDDXManager::InsertWtlCString(EnvDTE::ProjectPtr pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints, int Place)
+void CDDXManager::InsertWtlCString(CComPtr<EnvDTE::Project> pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints, int Place)
 {
 	InsertInclude* pInsInclude = new InsertInclude;
 	VSInclude* pInclude = new VSInclude;
@@ -174,7 +176,7 @@ void CDDXManager::InsertWtlCString(EnvDTE::ProjectPtr pProject, CSmartAtlArray<I
 	pInsInclude->pElement = pInclude;
 	if (Place == SPLACE_WHOLE)
 	{
-		pInsInclude->pProjectFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+		pInsInclude->pProjectFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 	}
 	CurInsPoints.Add(pInsInclude);
 }
@@ -463,7 +465,7 @@ void SetAtllDDX(VSClass* pClass, InsDelPoints* pModifications, bool bUseFloat /*
 		return;
 	InsertPointDDXSupport* pInsPt = FindInsertPoint(pModifications);
 
-	EnvDTE::CodeElementPtr pIncludeElem = FindInclude(pClass, L"<atlddx.h>", true);
+	CComPtr<EnvDTE::CodeElement> pIncludeElem = FindInclude(pClass, L"<atlddx.h>", true);
 	if (pIncludeElem == NULL)
 	{
 		if (!pInsPt)
@@ -483,7 +485,7 @@ void SetAtllDDX(VSClass* pClass, InsDelPoints* pModifications, bool bUseFloat /*
 	}
 	if (bUseFloat)
 	{
-		EnvDTE::CodeElementPtr pMacro = FindDefine(pClass, L"_ATL_USE_DDX_FLOAT", true);
+		CComPtr<EnvDTE::CodeElement> pMacro = FindDefine(pClass, L"_ATL_USE_DDX_FLOAT", true);
 		if (pMacro == NULL)
 		{
 			if (!pInsPt)

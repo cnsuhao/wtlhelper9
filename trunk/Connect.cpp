@@ -20,7 +20,10 @@
 
 // Connect.cpp : Implementation of CConnect
 #include "stdafx.h"
-#ifdef _FOR_VS2005
+
+#if defined(_FOR_VS2008)
+#include "AddIn9.h"
+#elif defined(_FOR_VS2005)
 #include "AddIn8.h"
 #else
 #include "AddIn.h"
@@ -42,7 +45,9 @@
 extern CAddInModule _AtlModule;
 VSFunction* g_pSelectedFunction;
 
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+#define AddinString() L"WtlHelper.Connect9."
+#elif defined(_FOR_VS2005)
 #define AddinString() L"WtlHelper.Connect8."
 #else
 #define AddinString() L"WtlHelper.Connect."
@@ -63,10 +68,16 @@ const CommandStruct VariableCmd(L"AddVariable", L"Add Variable", L"Add variable 
 								L"Text Editor::Ctrl+Shift+W, V");
 const CommandStruct FunctionCmd(L"AddFunction", L"Add Function", L"Add function to class", 
 								L"Text Editor::Ctrl+Shift+W, F");
-#ifdef _FOR_VS2005
+
+#if defined(_FOR_VS2008)
 const CommandStruct UninstallCmd(L"Uninstall", L"Uninstall", NULL, L"", CMDBAR_NO, -1,
 								 false, -1);
+#elif defined(_FOR_VS2005)
+const CommandStruct UninstallCmd(L"Uninstall", L"Uninstall", NULL, L"", CMDBAR_NO, -1,
+								 false, -1);
+#else
 #endif
+
 
 // WTL Helper command
 
@@ -126,9 +137,14 @@ const CommandStruct* WtlHelperCommands[]=
 {
 	&VariableCmd,
 	&FunctionCmd,
-#ifdef _FOR_VS2005
+
+#if defined(_FOR_VS2008)
 	&UninstallCmd,
+#elif defined(_FOR_VS2005)
+	&UninstallCmd,
+#else
 #endif
+
 	&HelperCmd,
 	&OptionCmd,
 	&ClassViewHandlerCmd,
@@ -154,7 +170,7 @@ const CommandStruct* WtlHelperCommands[]=
 // you will need to re-register the Add-in by building the MyAddin21Setup project 
 // by right clicking the project in the Solution Explorer, then choosing install.
 
-EnvDTE::ProjectPtr g_pActiveProject;
+CComPtr<EnvDTE::Project> g_pActiveProject;
 
 // CConnect
 STDMETHODIMP CConnect::OnConnection(IDispatch *pApplication, AddInDesignerObjects::ext_ConnectMode ConnectMode, IDispatch *pAddInInst, SAFEARRAY ** /*custom*/ )
@@ -164,9 +180,9 @@ STDMETHODIMP CConnect::OnConnection(IDispatch *pApplication, AddInDesignerObject
 	pAddInInst->QueryInterface(__uuidof(EnvDTE::AddIn), (LPVOID*)&m_pAddInInstance);
 	CCustomProjectSettings::m_sCustomProperties.Init(m_pDTE);
 
-	EnvDTE::CommandsPtr pCommands;
+	CComPtr<EnvDTE::Commands> pCommands;
 	UICommandBarsPtr pCommandBars;
-	EnvDTE::CommandPtr pCreatedCommand;
+	CComPtr<EnvDTE::Command> pCreatedCommand;
 	UICommandBarPtr pHostCmdBar;
 
 	// When run, the Add-in wizard prepared the registry for the Add-in.
@@ -180,7 +196,10 @@ STDMETHODIMP CConnect::OnConnection(IDispatch *pApplication, AddInDesignerObject
 	// the project directory, or run 'devenv /setup' from a command prompt.
 	//if (ConnectMode == AddInDesignerObjects::ext_cm_Startup || ConnectMode == AddInDesignerObjects::ext_cm_AfterStartup)
 	IfFailGoCheck(m_pDTE->get_Commands(&pCommands), pCommands);
-#ifdef _FOR_VS2005
+
+#if defined(_FOR_VS2008)
+	IfFailGoCheck(m_pDTE->get_CommandBars((IDispatch**)&pCommandBars), pCommandBars);
+#elif defined(_FOR_VS2005)
 	IfFailGoCheck(m_pDTE->get_CommandBars((IDispatch**)&pCommandBars), pCommandBars);
 #else
 	IfFailGoCheck(m_pDTE->get_CommandBars(&pCommandBars), pCommandBars);
@@ -205,7 +224,8 @@ STDMETHODIMP CConnect::OnConnection(IDispatch *pApplication, AddInDesignerObject
 			hr = pControls->get_Item(_variant_t(L"WTL Helper"), &pControl);
 			while (pControl != NULL)
 			{
-				UICommandBarPopupControlPtr pPopup = pControl;
+				UICommandBarPopupControlPtr pPopup; 
+				hr = pControl->QueryInterface(&pPopup);
 				if (pPopup != NULL)
 				{
 					pPopup->get_CommandBar(&pHelperCmdBar);
@@ -270,7 +290,7 @@ Error:
 
 HRESULT CConnect::CreateCommand(EnvDTE::Commands* pCommands, const CommandStruct* pCmd)
 {
-	EnvDTE::CommandPtr pCreatedCommand;
+	CComPtr<EnvDTE::Command> pCreatedCommand;
 	UICommandBarControlPtr pCommandBarControl;
 
 	HRESULT hr = pCommands->AddNamedCommand(m_pAddInInstance, pCmd->Name, pCmd->ButtonText, pCmd->ToolTip, pCmd->bMSOButton, pCmd->lBitmapId, NULL, EnvDTE::vsCommandStatusSupported+EnvDTE::vsCommandStatusEnabled, &pCreatedCommand);
@@ -279,7 +299,10 @@ HRESULT CConnect::CreateCommand(EnvDTE::Commands* pCommands, const CommandStruct
 		if ((pCmd->iCmdBar != CMDBAR_NO) && (WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar != NULL))
 		{
 			//Add a button to the tools menu bar.
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+			if (FAILED(pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
+				pCmd->lPos, (IDispatch**)&pCommandBarControl)) || (pCommandBarControl == NULL))
+#elif defined(_FOR_VS2005)
 			if (FAILED(pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
 				pCmd->lPos, (IDispatch**)&pCommandBarControl)) || (pCommandBarControl == NULL))
 #else
@@ -301,7 +324,7 @@ HRESULT CConnect::CreateCommand(EnvDTE::Commands* pCommands, const CommandStruct
 	}
 	else
 	{
-		EnvDTE::CommandPtr pCurCommand = NULL;
+		CComPtr<EnvDTE::Command> pCurCommand = NULL;
 		_bstr_t commandname = AddinString();
 		commandname += pCmd->Name;
 		pCommands->Item(_variant_t(commandname), 0, &pCurCommand);
@@ -312,7 +335,10 @@ HRESULT CConnect::CreateCommand(EnvDTE::Commands* pCommands, const CommandStruct
 
 		if ((pCmd->iCmdBar != CMDBAR_NO) && (WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar != NULL))
 		{
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+			if (FAILED(pCurCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar, 
+				pCmd->lPos,	(IDispatch**)&pCommandBarControl)) || (pCommandBarControl == NULL))
+#elif defined(_FOR_VS2005)
 			if (FAILED(pCurCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar, 
 				pCmd->lPos,	(IDispatch**)&pCommandBarControl)) || (pCommandBarControl == NULL))
 #else
@@ -394,7 +420,7 @@ STDMETHODIMP CConnect::QueryStatus(BSTR bstrCmdName, EnvDTE::vsCommandStatusText
 		}
 		if (!_wcsicmp(bstrCmdName, CMD(ClassView_Handlers)))
 		{
-			EnvDTE::ProjectPtr pProj;
+			CComPtr<EnvDTE::Project> pProj;
 			if (GetSelectedClass(pProj) != NULL)
 			{
 				*pStatusOption = (EnvDTE::vsCommandStatus)(EnvDTE::vsCommandStatusEnabled+EnvDTE::vsCommandStatusSupported);
@@ -406,7 +432,7 @@ STDMETHODIMP CConnect::QueryStatus(BSTR bstrCmdName, EnvDTE::vsCommandStatusText
 		}
 		if (!_wcsicmp(bstrCmdName, CMD(ClassView_Variables)))
 		{
-			EnvDTE::ProjectPtr pProj;
+			CComPtr<EnvDTE::Project> pProj;
 			if (GetSelectedClass(pProj) != NULL)
 			{
 				*pStatusOption = (EnvDTE::vsCommandStatus)(EnvDTE::vsCommandStatusEnabled+EnvDTE::vsCommandStatusSupported);
@@ -532,11 +558,17 @@ STDMETHODIMP CConnect::QueryStatus(BSTR bstrCmdName, EnvDTE::vsCommandStatusText
 				*pStatusOption = (EnvDTE::vsCommandStatus)(EnvDTE::vsCommandStatusInvisible+EnvDTE::vsCommandStatusSupported);
 			}
 		}
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
 		if (!_wcsicmp(bstrCmdName, CMD(Uninstall)))
 		{
 			*pStatusOption = (EnvDTE::vsCommandStatus)(EnvDTE::vsCommandStatusEnabled+EnvDTE::vsCommandStatusSupported);
 		}
+#elif defined(_FOR_VS2005)
+		if (!_wcsicmp(bstrCmdName, CMD(Uninstall)))
+		{
+			*pStatusOption = (EnvDTE::vsCommandStatus)(EnvDTE::vsCommandStatusEnabled+EnvDTE::vsCommandStatusSupported);
+		}
+#else
 #endif
 	}
 	
@@ -617,17 +649,23 @@ STDMETHODIMP CConnect::Exec(BSTR bstrCmdName, EnvDTE::vsCommandExecOption Execut
 			*pvbHandled = VARIANT_TRUE;
 			DoResViewReflect();
 		}
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
 		if (!_wcsicmp(bstrCmdName, CMD(Uninstall)))
 		{
 			UninstallAddin();
 		}
+#elif defined(_FOR_VS2005)
+		if (!_wcsicmp(bstrCmdName, CMD(Uninstall)))
+		{
+			UninstallAddin();
+		}
+#else
 #endif
 	}
 	return S_OK;
 }
 
-bool CConnect::ShowWTLHelper(EnvDTE::ProjectPtr pProj, CString ActiveClass, int ActivePage)
+bool CConnect::ShowWTLHelper(CComPtr<EnvDTE::Project> pProj, CString ActiveClass, int ActivePage)
 {
 	_bstr_t str;
 	_AtlModule.LoadAll();
@@ -684,7 +722,7 @@ bool CConnect::ShowWTLHelper(EnvDTE::ProjectPtr pProj, CString ActiveClass, int 
 	}
 	Classes.RemoveAll();
 #ifdef DEBUG
-	MessageBox(NULL, _T("End Work"), NULL, 0);
+	// MessageBox(NULL, _T("End Work"), NULL, 0);
 #endif
 	return true;
 }
@@ -692,13 +730,14 @@ bool CConnect::ShowWTLHelper(EnvDTE::ProjectPtr pProj, CString ActiveClass, int 
 STDMETHODIMP CConnect::DoAddin()
 {
 	g_pSelectedFunction = NULL;
-	ShowWTLHelper(EnvDTE::ProjectPtr(), CString(), -1);
+	CComPtr<EnvDTE::Project> spDummy;
+	ShowWTLHelper(spDummy, CString(), -1);
 	return S_OK;
 }
 
 HRESULT CConnect::DoAddFunction()
 {
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	if (GetActiveProject(pProj) != S_OK)
 	{
 		return S_FALSE;
@@ -812,7 +851,7 @@ HRESULT CConnect::DoAddFunction()
 
 HRESULT CConnect::DoAddVariable()
 {
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	if (GetActiveProject(pProj) != S_OK)
 	{
 		return S_FALSE;
@@ -909,8 +948,8 @@ HRESULT CConnect::DoClassViewHandler()
 {
 	g_pSelectedFunction = NULL;
 
-	EnvDTE::ProjectPtr pProj;
-	EnvDTE::CodeClassPtr pClass = GetSelectedClass(pProj);
+	CComPtr<EnvDTE::Project> pProj;
+	CComPtr<EnvDTE::CodeClass> pClass = GetSelectedClass(pProj);
 	CString ClassName;
 	if (pClass != NULL)
 	{
@@ -926,8 +965,8 @@ HRESULT CConnect::DoClassViewVariable()
 {
 	g_pSelectedFunction = NULL;
 
-	EnvDTE::ProjectPtr pProj;
-	EnvDTE::CodeClassPtr pClass = GetSelectedClass(pProj);
+	CComPtr<EnvDTE::Project> pProj;
+	CComPtr<EnvDTE::CodeClass> pClass = GetSelectedClass(pProj);
 	CString ClassName;
 	if (pClass != NULL)
 	{
@@ -943,7 +982,7 @@ HRESULT CConnect::DoResViewDDX()
 {
 	g_pSelectedFunction = NULL;
 
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	int iDlgClass = -1;
 	CAtlArray<CString> Controls;
 	CSmartAtlArray<VSClass*> Classes;
@@ -1024,7 +1063,7 @@ HRESULT CConnect::DoResViewReflect()
 	int iDlgClass;
 	CAtlArray<CString> Controls;
 	CSmartAtlArray<VSClass*> Classes;
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 
 	CString DialogID, RCFile;
 	CString ResourceType = GetActiveResourceType(DialogID, RCFile);
@@ -1105,7 +1144,7 @@ HRESULT CConnect::DoResViewDialog()
 
 	_AtlModule.LoadAll();
 
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	if (GetActiveProject(pProj) != S_OK)
 	{
 		return E_FAIL;
@@ -1139,7 +1178,7 @@ HRESULT CConnect::DoResViewContextDDX()
 
 	CSmartAtlArray<VSClass*> Classes;
 	CAtlArray<CString> Controls;
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 
 	int iDlgClass = -1;
 	
@@ -1202,7 +1241,7 @@ HRESULT CConnect::DoResViewContextHandler()
 
 	CSmartAtlArray<VSClass*> Classes;
 	CAtlArray<CString> Controls;
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 
 	int iDlgClass = -1;
 
@@ -1271,7 +1310,7 @@ HRESULT CConnect::DoResViewContextDialog()
 
 	_AtlModule.LoadAll();
 
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	if (GetSelectedProject(pProj) != S_OK)
 	{
 		return E_FAIL;
@@ -1300,10 +1339,11 @@ HRESULT CConnect::DoResViewContextDialog()
 	return S_OK;
 }
 
-EnvDTE::CodeClassPtr CConnect::GetSelectedClass(EnvDTE::ProjectPtr& pProj)
+CComPtr<EnvDTE::CodeClass> CConnect::GetSelectedClass(CComPtr<EnvDTE::Project> & pProj)
 {
-	EnvDTE::SelectedItemsPtr pSelItems;
-	EnvDTE::CodeClassPtr pClass;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::SelectedItems> pSelItems;
+	CComPtr<EnvDTE::CodeClass> pClass;
 	if (m_pDTE->get_SelectedItems(&pSelItems) == S_OK)
 	{
 		ATLASSERT(pSelItems != NULL);
@@ -1311,10 +1351,10 @@ EnvDTE::CodeClassPtr CConnect::GetSelectedClass(EnvDTE::ProjectPtr& pProj)
 		pSelItems->get_Count(&Count);
 		if (Count)
 		{
-			EnvDTE::SelectedItemPtr pSelItem;
+			CComPtr<EnvDTE::SelectedItem> pSelItem;
 			pSelItems->Item(_variant_t(1), &pSelItem);
 			ATLASSERT(pSelItem != NULL);
-			EnvDTE::ProjectItemPtr pProjItem;
+			CComPtr<EnvDTE::ProjectItem> pProjItem;
 			pSelItem->get_ProjectItem(&pProjItem);
 			if (pProjItem != NULL)
 			{
@@ -1322,27 +1362,31 @@ EnvDTE::CodeClassPtr CConnect::GetSelectedClass(EnvDTE::ProjectPtr& pProj)
 			}
 		}
 				
-		EnvDTE::SelectionContainerPtr pSelContainer;
+		CComPtr<EnvDTE::SelectionContainer> pSelContainer;
 		if (pSelItems->get_SelectionContainer(&pSelContainer) == S_OK)
 		{
 			if (pSelContainer != NULL)
 			{
-				IDispatchPtr pObject;
-				pSelContainer->Item(_variant_t(1), &pObject);
-				pClass = pObject;
+				CComPtr<IDispatch> pObject;
+				hr = pSelContainer->Item(_variant_t(1), &pObject);
+				if (SUCCEEDED(hr))
+				{
+					hr = pObject->QueryInterface(&pClass);
+				}
 			}
 		}
 	}
 	return pClass;
 }
 
-HRESULT CConnect::GetActiveProject(EnvDTE::ProjectPtr& pProj)
+HRESULT CConnect::GetActiveProject(CComPtr<EnvDTE::Project> & pProj)
 {
-	EnvDTE::DocumentPtr pCurDoc;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::Document> pCurDoc;
 	m_pDTE->get_ActiveDocument(&pCurDoc);
 	if (pCurDoc != NULL)
 	{
-		EnvDTE::ProjectItemPtr pProjItem;
+		CComPtr<EnvDTE::ProjectItem> pProjItem;
 		pCurDoc->get_ProjectItem(&pProjItem);
 		if (pProjItem == NULL)
 		{
@@ -1372,7 +1416,7 @@ HRESULT CConnect::GetActiveProject(EnvDTE::ProjectPtr& pProj)
 		if (pArray[0].rgsabound[0].cElements > 0)
 		{
 			vt2 = ((_variant_t*)pArray[0].pvData)[0];
-			pProj = vt2.pdispVal;
+			hr = vt2.pdispVal->QueryInterface(&pProj);
 			if (pProj == NULL)
 			{
 				return S_FALSE;
@@ -1385,9 +1429,9 @@ HRESULT CConnect::GetActiveProject(EnvDTE::ProjectPtr& pProj)
 	return S_OK;
 }
 
-HRESULT CConnect::GetSelectedProject(EnvDTE::ProjectPtr& pProj)
+HRESULT CConnect::GetSelectedProject(CComPtr<EnvDTE::Project>& pProj)
 {
-	EnvDTE::SelectedItemsPtr pSelItems;
+	CComPtr<EnvDTE::SelectedItems> pSelItems;
 	if (m_pDTE->get_SelectedItems(&pSelItems) == S_OK)
 	{
 		ATLASSERT(pSelItems != NULL);
@@ -1395,10 +1439,10 @@ HRESULT CConnect::GetSelectedProject(EnvDTE::ProjectPtr& pProj)
 		pSelItems->get_Count(&Count);
 		if (Count)
 		{
-			EnvDTE::SelectedItemPtr pSelItem;
+			CComPtr<EnvDTE::SelectedItem> pSelItem;
 			pSelItems->Item(_variant_t(1), &pSelItem);
 			ATLASSERT(pSelItem != NULL);
-			EnvDTE::ProjectItemPtr pProjItem;
+			CComPtr<EnvDTE::ProjectItem> pProjItem;
 			pSelItem->get_ProjectItem(&pProjItem);
 			if (pProjItem != NULL)
 			{
@@ -1409,22 +1453,23 @@ HRESULT CConnect::GetSelectedProject(EnvDTE::ProjectPtr& pProj)
 	return E_FAIL;
 }
 
-EnvDTE::CodeElementPtr CConnect::GetClassFromMember(EnvDTE::CodeElementPtr pMember)
+CComPtr<EnvDTE::CodeElement> CConnect::GetClassFromMember(CComPtr<EnvDTE::CodeElement> pMember)
 {
-	EnvDTE::CodeElementPtr pParrentElem;
-	EnvDTE::CodeElementsPtr pColection = NULL;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::CodeElement> pParrentElem;
+	CComPtr<EnvDTE::CodeElements> pColection = NULL;
 	if (FAILED(pMember->get_Collection(&pColection)) || (pColection == NULL))
 	{
 		return pParrentElem;
 	}
 
-	IDispatch* pPar = NULL;
-	pColection->get_Parent((IDispatch**)&pPar);
-	pParrentElem = pPar;
+	CComPtr<IDispatch> pPar;
+	pColection->get_Parent(&pPar);
+	hr = pPar->QueryInterface(&pParrentElem);
 	return pParrentElem;
 }
 
-EnvDTE::wizardResult CConnect::CreateDialogClass(EnvDTE::ProjectPtr pProj, CString DialogID, bool bShow /* = false */)
+EnvDTE::wizardResult CConnect::CreateDialogClass(CComPtr<EnvDTE::Project> pProj, CString DialogID, bool bShow /* = false */)
 {
 	CString WizardPath;
 	LPCTSTR lpVersion = _T("1.1");
@@ -1459,7 +1504,7 @@ EnvDTE::wizardResult CConnect::CreateDialogClass(EnvDTE::ProjectPtr pProj, CStri
 	ContextParams.Add(_variant_t(EnvDTE::vsWizardAddItem));
 	pProj->get_Name(Str.GetAddress());
 	ContextParams.Add(_variant_t(Str));
-	EnvDTE::ProjectItemsPtr pProjItems;
+	CComPtr<EnvDTE::ProjectItems> pProjItems;
 	pProj->get_ProjectItems(&pProjItems);
 	pProj->get_FullName(Str.GetAddress());
 	CString FullName = (LPCTSTR)Str;
@@ -1578,42 +1623,42 @@ eWizardsErrors CConnect::GetWTLDLGWizardPath(CString& Path, LPCTSTR lpMinVersion
 	return eSuccess;
 }
 
-CString CConnect::GetActiveClass(EnvDTE::TextPointPtr& pCurPoint)
+CString CConnect::GetActiveClass(CComPtr<EnvDTE::TextPoint>& pCurPoint)
 {
-	EnvDTE::DocumentPtr pDoc = NULL;
+	CComPtr<EnvDTE::Document> pDoc = NULL;
 	if (FAILED(m_pDTE->get_ActiveDocument(&pDoc)) || (pDoc == NULL))
 	{
 		return CString();
 	}
 
-	EnvDTE::ProjectItemPtr pItem = NULL;
+	CComPtr<EnvDTE::ProjectItem> pItem = NULL;
 	if (FAILED(pDoc->get_ProjectItem(&pItem)) || (pItem == NULL))
 	{
 		return CString();
 	}
 
-	EnvDTE::FileCodeModelPtr pFileModel = NULL;
+	CComPtr<EnvDTE::FileCodeModel> pFileModel = NULL;
 	if (FAILED(pItem->get_FileCodeModel(&pFileModel)) || pFileModel == NULL)
 	{
 		return CString();
 	}
 
-	EnvDTE::TextSelectionPtr pSel;
-	IDispatch* pDisp = NULL;
-	if (FAILED(pDoc->get_Selection(&pDisp)) || !pDisp)
+	CComPtr<EnvDTE::TextSelection> pSel;
+	CComPtr<IDispatch> pDisp;
+	if (FAILED(pDoc->get_Selection(&pDisp)) || pDisp==NULL)
 	{
 		return CString();
 	}
-	pSel = pDisp;
+	pDisp->QueryInterface(&pSel);
 	if (pSel != NULL)
 	{
-		EnvDTE::VirtualPointPtr pCurPos = NULL;
+		CComPtr<EnvDTE::VirtualPoint> pCurPos = NULL;
 		if (FAILED(pSel->get_ActivePoint(&pCurPos)) || (pCurPos == NULL))
 		{
 			return CString();
 		}
 
-		EnvDTE::CodeElementPtr pElement = NULL;
+		CComPtr<EnvDTE::CodeElement> pElement = NULL;
 		if (FAILED(pFileModel->CodeElementFromPoint(pCurPos, EnvDTE::vsCMElementClass, &pElement)) || (pElement == NULL))
 		{
 			pFileModel->CodeElementFromPoint(pCurPos, EnvDTE::vsCMElementFunction, &pElement);
@@ -1633,7 +1678,7 @@ CString CConnect::GetActiveClass(EnvDTE::TextPointPtr& pCurPoint)
 
 			if (ElemType == EnvDTE::vsCMElementFunction)
 			{
-				EnvDTE::CodeElementPtr pParrentElem = GetClassFromMember(pElement);
+				CComPtr<EnvDTE::CodeElement> pParrentElem = GetClassFromMember(pElement);
 				
 				Elem.pElement = pParrentElem;
 				Elem.RetriveName(true);
@@ -1644,14 +1689,14 @@ CString CConnect::GetActiveClass(EnvDTE::TextPointPtr& pCurPoint)
 
 	if (pFileModel != NULL)
 	{
-		EnvDTE::CodeElementsPtr Elements;
+		CComPtr<EnvDTE::CodeElements> Elements;
 		pFileModel->get_CodeElements(&Elements);
 		long Count;
 		Elements->get_Count(&Count);
-		EnvDTE::CodeElementPtr pElem;
 		CString ClassName;
 		for (long i = 1; i <= Count; i++)
 		{
+			CComPtr<EnvDTE::CodeElement> pElem;
 			Elements->Item(_variant_t(i), &pElem);
 			
 			EnvDTE::vsCMElement ElemType;
@@ -1670,7 +1715,7 @@ CString CConnect::GetActiveClass(EnvDTE::TextPointPtr& pCurPoint)
 			}
 			if (ElemType == EnvDTE::vsCMElementFunction)
 			{
-				EnvDTE::CodeElementPtr pClass = GetClassFromMember(pElem);
+				CComPtr<EnvDTE::CodeElement> pClass = GetClassFromMember(pElem);
 				_bstr_t Name;
 				pClass->get_FullName(Name.GetAddress());
 				ClassName = (LPCTSTR)Name;
@@ -1684,7 +1729,7 @@ CString CConnect::GetActiveClass(EnvDTE::TextPointPtr& pCurPoint)
 
 int CConnect::GetActiveClass(CSmartAtlArray<VSClass*>& Classes, CString ClassName)
 {
-	EnvDTE::TextPointPtr pCurPtr;
+	CComPtr<EnvDTE::TextPoint> pCurPtr;
 	CString CurrentClass;
 	if (ClassName.IsEmpty())
 	{
@@ -1708,7 +1753,7 @@ int CConnect::GetActiveClass(CSmartAtlArray<VSClass*>& Classes, CString ClassNam
 				for (size_t k = 0; k < pCurClass->NestedClasses.GetCount(); k++)
 				{
 					VSClass* pNestedClass = pCurClass->NestedClasses[k];
-					EnvDTE::EditPointPtr pStart, pEnd;
+					CComPtr<EnvDTE::EditPoint> pStart, pEnd;
 					pNestedClass->GetStartPoint(&pStart);
 					pNestedClass->GetEndPoint(&pEnd);
 					VARIANT_BOOL bInside = VARIANT_FALSE;
@@ -1739,7 +1784,7 @@ int CConnect::GetActiveClass(CSmartAtlArray<VSClass*>& Classes, CString ClassNam
 
 CString CConnect::GetActiveResourceType(CString& ResourceID, CString& FileName)
 {
-	EnvDTE::WindowPtr pCurWindow;
+	CComPtr<EnvDTE::Window> pCurWindow;
 	m_pDTE->get_ActiveWindow(&pCurWindow);
 	if (pCurWindow == NULL)
 		return CString();
@@ -1784,11 +1829,11 @@ bool CConnect::IsPossibleResourceType(CString ResourceType)
 
 bool CConnect::IsDialogSelected()
 {
-	EnvDTE::SelectedItemsPtr pSelItems;
-	EnvDTE::SelectionContainerPtr pSelContainer;
+	CComPtr<EnvDTE::SelectedItems> pSelItems;
+	CComPtr<EnvDTE::SelectionContainer> pSelContainer;
 	m_pDTE->get_SelectedItems(&pSelItems);
 
-	IDispatchPtr pObject;
+	CComPtr<IDispatch> pObject;
 	pSelItems->get_SelectionContainer(&pSelContainer);
 	if (pSelContainer == NULL)
 		return false;
@@ -1803,7 +1848,7 @@ bool CConnect::IsDialogSelected()
 		{
 			return false;
 		}
-		ITypeInfoPtr pTypeInfo;
+		CComPtr<ITypeInfo> pTypeInfo;
 		pObject->GetTypeInfo(1, GetSystemDefaultLCID(), &pTypeInfo);
 		if (pTypeInfo != NULL)
 		{
@@ -1822,8 +1867,8 @@ bool CConnect::IsDialogSelected()
 
 bool CConnect::IsMultipleSelected()
 {
-	EnvDTE::SelectedItemsPtr pSelItems;
-	EnvDTE::SelectionContainerPtr pSelContainer;
+	CComPtr<EnvDTE::SelectedItems> pSelItems;
+	CComPtr<EnvDTE::SelectionContainer> pSelContainer;
 	m_pDTE->get_SelectedItems(&pSelItems);
 
 	pSelItems->get_SelectionContainer(&pSelContainer);
@@ -1835,11 +1880,11 @@ bool CConnect::IsMultipleSelected()
 bool CConnect::GetActiveControlID(CAtlArray<CString>& ActiveControls)
 {
 	CString ResID;
-	EnvDTE::SelectedItemsPtr pSelItems;
-	EnvDTE::SelectionContainerPtr pSelContainer;
+	CComPtr<EnvDTE::SelectedItems> pSelItems;
+	CComPtr<EnvDTE::SelectionContainer> pSelContainer;
 	m_pDTE->get_SelectedItems(&pSelItems);
 
-	IDispatchPtr pObject;
+	CComPtr<IDispatch> pObject;
 	pSelItems->get_SelectionContainer(&pSelContainer);
 	long Count;
 	pSelContainer->get_Count(&Count);
@@ -1864,24 +1909,30 @@ bool CConnect::GetActiveControlID(CAtlArray<CString>& ActiveControls)
 
 int CConnect::FindClassByDlgID(ClassVector Classes, CString DialogID)
 {
+	HRESULT hr = E_FAIL; 
 	int iDlgClass = -1;
 	for (size_t i = 0; i < Classes.GetCount(); i++)
 	{
-		VCCodeModelLibrary::VCCodeClassPtr pVCClass = Classes[i]->pElement;
-		EnvDTE::CodeElementsPtr pEnums = pVCClass->Enums;
+		CComPtr<VCCodeModelLibrary::VCCodeClass> pVCClass;
+		pVCClass = Classes[i]->pElement;
+		CComPtr<EnvDTE::CodeElements> pEnums;
+		hr = pVCClass->get_Enums(&pEnums);
 		long Count;
 		pEnums->get_Count(&Count);
 		for (long j = 1; j <= Count; j++ )
 		{
-			EnvDTE::CodeElementPtr pElem;
+			CComPtr<EnvDTE::CodeElement> pElem;
 			pEnums->Item(_variant_t(j), &pElem);
-			VCCodeModelLibrary::VCCodeEnumPtr pEnum = pElem;
+			CComPtr<VCCodeModelLibrary::VCCodeEnum> pEnum; 
+			hr = pElem->QueryInterface(&pEnum);
 			if (pEnum != NULL)
 			{
-				EnvDTE::CodeElementsPtr pMembers = pEnum->Members;
-				EnvDTE::CodeVariablePtr pMember;
+				CComPtr<EnvDTE::CodeElements> pMembers; 
+				hr = pEnum->get_Members(&pMembers);
+				CComPtr<EnvDTE::CodeVariable> pMember;
+				pElem.Release();
 				pMembers->Item(_variant_t(L"IDD"), &pElem);
-				pMember = pElem;
+				hr = pElem->QueryInterface(&pMember);
 				if (pMember != NULL)
 				{
 					_bstr_t Value;
@@ -1905,7 +1956,7 @@ void CConnect::SaveResourceDocuments()
 	// save resource files
 	// information about resources is got from files directly
 	// so this step is important
-	EnvDTE::DocumentsPtr pDocuments;
+	CComPtr<EnvDTE::Documents> pDocuments;
 	m_pDTE->get_Documents(&pDocuments);
 	if (pDocuments != NULL)
 	{
@@ -1913,7 +1964,7 @@ void CConnect::SaveResourceDocuments()
 		pDocuments->get_Count(&Count);
 		for (long i = 1; i <= Count; i++)
 		{
-			EnvDTE::DocumentPtr pDoc;
+			CComPtr<EnvDTE::Document> pDoc;
 			pDocuments->Item(_variant_t(i), &pDoc);
 			_bstr_t str;
 			pDoc->get_FullName(str.GetAddress());
@@ -1936,7 +1987,7 @@ HRESULT CConnect::AddDialogHandler(CString RCFile, CString DialogID)
 {
 	CAtlArray<CString> Controls;
 	CSmartAtlArray<VSClass*> Classes;
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	int iDlgClass;
 
 	CSmartAtlArray<InsDelPoints> Modifications;
@@ -1990,7 +2041,7 @@ HRESULT CConnect::AddIDHandler(CString RCFile, CString ResID, CString ResType)
 
 	_AtlModule.LoadAll();
 
-	EnvDTE::ProjectPtr pProj;
+	CComPtr<EnvDTE::Project> pProj;
 	if (GetActiveProject(pProj) != S_OK)
 	{
 		return false;
@@ -2012,7 +2063,7 @@ HRESULT CConnect::AddIDHandler(CString RCFile, CString ResID, CString ResType)
 	CSmartAtlArray<InsDelPoints> Modifications;
 	CResourceManager ResManager;
 
-	EnvDTE::ProjectItemPtr pRCFile = FindItem(pProj, _bstr_t(RCFile), EnvDTE::ProjectItemPtr());
+	CComPtr<EnvDTE::ProjectItem> pRCFile = FindItem(pProj, _bstr_t(RCFile), CComPtr<EnvDTE::ProjectItem>());
 	if (pRCFile != NULL)
 	{
 		ResManager.LoadResources(pRCFile);
@@ -2039,7 +2090,7 @@ HRESULT CConnect::AddIDHandler(CString RCFile, CString ResID, CString ResType)
 	int iDefClass = -1;
 	// select default class
 	CString DefClassName = _T("CMainFrame");
-	EnvDTE::GlobalsPtr pGlobals;
+	CComPtr<EnvDTE::Globals> pGlobals;
 	pProj->get_Globals(&pGlobals);
 	if (pGlobals != NULL)
 	{
@@ -2090,8 +2141,9 @@ HRESULT CConnect::AddIDHandler(CString RCFile, CString ResID, CString ResType)
 	return S_OK;
 }
 
-HRESULT CConnect::AddClassToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlArray<VSClass*>& Classes, VSClass* pParentClass /*  = NULL */)
+HRESULT CConnect::AddClassToVector(CComPtr<EnvDTE::CodeElement> pItem, CSmartAtlArray<VSClass*>& Classes, VSClass* pParentClass /*  = NULL */)
 {
+	HRESULT hr = E_FAIL;
 	VSClass* pClass = new VSClass;
 	pClass->pElement = pItem;
 	pClass->pCodeModel = m_pCodeModel;
@@ -2101,15 +2153,17 @@ HRESULT CConnect::AddClassToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlArray<
 		pParentClass->NestedClasses.Add(pClass);
 	}
 	Classes.Add(pClass);
-	VCCodeModelLibrary::VCCodeClassPtr pVCClass = pItem;
+	CComPtr<VCCodeModelLibrary::VCCodeClass> pVCClass;
+	hr = pItem->QueryInterface(&pVCClass);
 	if (pVCClass != NULL)
 	{
-		EnvDTE::CodeElementsPtr pNestedClasses = pVCClass->Classes;
+		CComPtr<EnvDTE::CodeElements> pNestedClasses;
+		hr = pVCClass->get_Classes(&pNestedClasses);
 		long NestedCount;
 		pNestedClasses->get_Count(&NestedCount);
 		for (long j = 1; j <= NestedCount; j++ )
 		{
-			EnvDTE::CodeElementPtr pNestedClass;
+			CComPtr<EnvDTE::CodeElement> pNestedClass;
 			pNestedClasses->Item(_variant_t(j), &pNestedClass);
 			AddClassToVector(pNestedClass, Classes, pClass);
 		}
@@ -2117,26 +2171,28 @@ HRESULT CConnect::AddClassToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlArray<
 	return S_OK;
 }
 
-HRESULT CConnect::AddNamespaceToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlArray<VSClass*>& Classes)
+HRESULT CConnect::AddNamespaceToVector(CComPtr<EnvDTE::CodeElement> pItem, CSmartAtlArray<VSClass*>& Classes)
 {
-	VCCodeModelLibrary::VCCodeNamespacePtr pNamespace = pItem;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeNamespace> pNamespace; 
+	hr = pItem->QueryInterface(&pNamespace);
 	if (pNamespace != NULL)
 	{
-		EnvDTE::CodeElementsPtr pClasses, pNamespaces;
-		pClasses = pNamespace->Classes;
+		CComPtr<EnvDTE::CodeElements> pClasses, pNamespaces;
+		hr = pNamespace->get_Classes(&pClasses);
 		long Count;
 		pClasses->get_Count(&Count);
 		for (long i = 1; i <= Count; i++)
 		{
-			EnvDTE::CodeElementPtr pElem;
+			CComPtr<EnvDTE::CodeElement> pElem;
 			pClasses->Item(_variant_t(i), &pElem);
 			AddClassToVector(pElem, Classes);
 		}
-		pNamespaces = pNamespace->Namespaces;
+		hr = pNamespace->get_Namespaces(&pNamespaces);
 		pNamespaces->get_Count(&Count);
 		for (long i = 1; i <= Count; i++)
 		{
-			EnvDTE::CodeElementPtr pElem;
+			CComPtr<EnvDTE::CodeElement> pElem;
 			pNamespaces->Item(_variant_t(i), &pElem);
 			AddNamespaceToVector(pElem, Classes);
 		}
@@ -2144,10 +2200,10 @@ HRESULT CConnect::AddNamespaceToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlAr
 	return S_OK;
 }
 
-HRESULT CConnect::GetClasses(EnvDTE::ProjectPtr pProj, CSmartAtlArray<VSClass*>& Classes)
+HRESULT CConnect::GetClasses(EnvDTE::Project * pProj, CSmartAtlArray<VSClass*>& Classes)
 {
-	EnvDTE::CodeElementsPtr pElements = NULL;
-	EnvDTE::CodeElementPtr pItem;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::CodeElements> pElements = NULL;
 
 	if (pProj == NULL)
 	{
@@ -2159,9 +2215,15 @@ HRESULT CConnect::GetClasses(EnvDTE::ProjectPtr pProj, CSmartAtlArray<VSClass*>&
 		return E_FAIL;
 	}
 
-#ifdef _FOR_VS2005
-	EnvDTE80::CodeModel2Ptr pCodeModel2 = m_pCodeModel;
+#if defined(_FOR_VS2008)
+	CComPtr<EnvDTE80::CodeModel2> pCodeModel2; 
+	hr = m_pCodeModel->QueryInterface(&pCodeModel2);
 	pCodeModel2->Synchronize();
+#elif defined(_FOR_VS2005)
+	CComPtr<EnvDTE80::CodeModel2> pCodeModel2; 
+	hr = m_pCodeModel->QueryInterface(&pCodeModel2);
+	pCodeModel2->Synchronize();
+#else
 #endif
 
 	if (FAILED(m_pCodeModel->get_CodeElements(&pElements)))
@@ -2174,6 +2236,7 @@ HRESULT CConnect::GetClasses(EnvDTE::ProjectPtr pProj, CSmartAtlArray<VSClass*>&
 	for (long i = 1; i <= Count; i++)
 	{
 		_variant_t vt = i;
+		CComPtr<EnvDTE::CodeElement> pItem;
 		if (FAILED(pElements->Item(vt, &pItem)) || (pItem == NULL))
 		{
 			return E_FAIL;
@@ -2194,7 +2257,7 @@ HRESULT CConnect::GetClasses(EnvDTE::ProjectPtr pProj, CSmartAtlArray<VSClass*>&
 	return S_OK;
 }
 
-HRESULT CConnect::PrepareDlgClass(EnvDTE::ProjectPtr& pProj, CSmartAtlArray<VSClass*>& Classes, int& iDlgClass, CAtlArray<CString>& Controls, CResourceManager* pResManager)
+HRESULT CConnect::PrepareDlgClass(CComPtr<EnvDTE::Project> & pProj, CSmartAtlArray<VSClass*>& Classes, int& iDlgClass, CAtlArray<CString>& Controls, CResourceManager* pResManager)
 {
 	CString DialogID;
 	CString RCFileName;
@@ -2256,7 +2319,7 @@ HRESULT CConnect::PrepareDlgClass(EnvDTE::ProjectPtr& pProj, CSmartAtlArray<VSCl
 
 	SaveResourceDocuments();
 
-	EnvDTE::ProjectItemPtr pRCFile = FindItem(pProj, _bstr_t(RCFileName), EnvDTE::ProjectItemPtr());
+	CComPtr<EnvDTE::ProjectItem> pRCFile = FindItem(pProj, _bstr_t(RCFileName), CComPtr<EnvDTE::ProjectItem>());
 	if (pRCFile != NULL && pResManager)
 	{
 		pResManager->LoadResources(pRCFile);
@@ -2264,23 +2327,23 @@ HRESULT CConnect::PrepareDlgClass(EnvDTE::ProjectPtr& pProj, CSmartAtlArray<VSCl
 	return S_OK;
 }
 
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2005) || defined(_FOR_VS2008)
 
 HRESULT CConnect::UninstallAddin()
 {
 	HRESULT hr = S_OK;
-	EnvDTE::CommandsPtr pCommands;
+	CComPtr<EnvDTE::Commands> pCommands;
 	UICommandBarsPtr pCommandBars;
 	UICommandBarPtr pHostCmdBar;
 		
 	m_pDTE->get_Commands(&pCommands);
 
 	//removing Commands
-	EnvDTE::CommandPtr pCmd;
 	CString strBase = AddinString();
 	for(size_t i =0; i < _countof(WtlHelperCommands); i++)
 	{
 		CString str = strBase + (LPCTSTR)WtlHelperCommands[i]->Name;
+		CComPtr<EnvDTE::Command> pCmd;
 		pCommands->Item(_variant_t(str), 0, &pCmd);
 		if (pCmd != NULL)
 		{
@@ -2295,10 +2358,12 @@ HRESULT CConnect::UninstallAddin()
 }
 
 #endif
+
 //////////////////////////////////////////////////////////////////////////
 
 void UpdateClasses(CSmartAtlArray<InsDelPoints>* pModifications, ClassVector* pClassVector)
 {
+	HRESULT hr = E_FAIL;
 	VSFunction* pLastFunction = NULL;
 	for (size_t i = 0; i < (*pModifications).GetCount(); i++)
 	{
@@ -2355,18 +2420,18 @@ void UpdateClasses(CSmartAtlArray<InsDelPoints>* pModifications, ClassVector* pC
 	}
 	if (g_pSelectedFunction)
 	{
-		EnvDTE::ProjectItemPtr pProjItem;
-		VCCodeModelLibrary::VCCodeFunctionPtr pFunc;
+		CComPtr<EnvDTE::ProjectItem> pProjItem;
+		CComPtr<VCCodeModelLibrary::VCCodeFunction> pFunc;
 		pFunc = g_pSelectedFunction->pElement;
 		if(pFunc != NULL)
 		{
-			pProjItem = pFunc->GetProjectItem();
+			hr = pFunc->get_ProjectItem(&pProjItem);
 
-			EnvDTE::WindowPtr pWindow;
+			CComPtr<EnvDTE::Window> pWindow;
 			HRESULT hRes = pProjItem->Open(_bstr_t(EnvDTE::vsViewKindPrimary), &pWindow);
 			if (SUCCEEDED(hRes))
 			{
-				EnvDTE::EditPointPtr pEditPoint;
+				CComPtr<EnvDTE::EditPoint> pEditPoint;
 				if (g_pSelectedFunction->GetStartPoint(&pEditPoint) == S_OK)
 				{
 					VARIANT_BOOL bShow;
@@ -2378,9 +2443,9 @@ void UpdateClasses(CSmartAtlArray<InsDelPoints>* pModifications, ClassVector* pC
 	pModifications->RemoveAll();
 }
 
-EnvDTE::ProjectItemPtr FindItem(EnvDTE::ProjectPtr pProject, _bstr_t ItemName, EnvDTE::ProjectItemPtr pPrevElem)
+CComPtr<EnvDTE::ProjectItem> FindItem(EnvDTE::Project * pProject, _bstr_t ItemName, CComPtr<EnvDTE::ProjectItem> pPrevElem)
 {
-	EnvDTE::ProjectItemsPtr pItems = NULL;
+	CComPtr<EnvDTE::ProjectItems> pItems;
 	if (pPrevElem == NULL)
 	{
 		pProject->get_ProjectItems(&pItems);
@@ -2390,14 +2455,14 @@ EnvDTE::ProjectItemPtr FindItem(EnvDTE::ProjectPtr pProject, _bstr_t ItemName, E
 		pPrevElem->get_ProjectItems(&pItems);
 	}
 	if (pItems == NULL)
-		return EnvDTE::ProjectItemPtr(NULL);
+		return CComPtr<EnvDTE::ProjectItem>(NULL);
 	long Count;
 	pItems->get_Count(&Count);
 	if (Count == 0)
-		return EnvDTE::ProjectItemPtr(NULL);
+		return CComPtr<EnvDTE::ProjectItem>(NULL);
 	for (long i = 1; i <= Count; i++)
 	{
-		EnvDTE::ProjectItemPtr pItem;
+		CComPtr<EnvDTE::ProjectItem> pItem;
 		pItems->Item(_variant_t(i), &pItem);
 		_bstr_t IName;
 		pItem->get_Name(IName.GetAddress());
@@ -2407,45 +2472,45 @@ EnvDTE::ProjectItemPtr FindItem(EnvDTE::ProjectPtr pProject, _bstr_t ItemName, E
 			return pItem;
 		}
 
-		EnvDTE::ProjectItemPtr pItem2 = FindItem(pProject, ItemName, pItem);
+		CComPtr<EnvDTE::ProjectItem> pItem2 = FindItem(pProject, ItemName, pItem);
 		if (pItem2 != NULL)
 			return pItem2;
 	}
-	return EnvDTE::ProjectItemPtr(NULL);
+	return CComPtr<EnvDTE::ProjectItem>(NULL);
 }
 
-EnvDTE::CodeElementPtr FindDefine(EnvDTE::ProjectItemPtr pItem, LPCWSTR Name)
+CComPtr<EnvDTE::CodeElement> FindDefine(CComPtr<EnvDTE::ProjectItem> pItem, LPCWSTR Name)
 {
-	EnvDTE::FileCodeModelPtr pFileCodeModel;
-	VCCodeModelLibrary::VCFileCodeModelPtr pVCFileCodeModel;
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::FileCodeModel> pFileCodeModel;
+	CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
 	hr = pItem->get_FileCodeModel(&pFileCodeModel);
 	ATLASSERT(hr == S_OK);
 	if (hr != S_OK)
-		return EnvDTE::CodeElementPtr();
+		return CComPtr<EnvDTE::CodeElement>();
 
 	pVCFileCodeModel = pFileCodeModel;
 	ATLASSERT(pVCFileCodeModel != NULL);
 
-	EnvDTE::CodeElementsPtr pDefines;
+	CComPtr<EnvDTE::CodeElements> pDefines;
 	hr = pVCFileCodeModel->get_Macros(&pDefines);
 	ATLASSERT(hr == S_OK);
-	EnvDTE::CodeElementPtr pDefine;
+	CComPtr<EnvDTE::CodeElement> pDefine;
 	if ((pDefines->Item(_variant_t(Name), &pDefine) == S_OK) && (pDefine != NULL))
 	{
 		return pDefine;
 	}
 	else
 	{
-		return EnvDTE::CodeElementPtr();
+		return CComPtr<EnvDTE::CodeElement>();
 	}
 }
 
-EnvDTE::CodeElementPtr FindDefine(VSClass* pClass, LPCWSTR Name, bool bStdAfx /* = false */)
+CComPtr<EnvDTE::CodeElement> FindDefine(VSClass* pClass, LPCWSTR Name, bool bStdAfx /* = false */)
 {
-	EnvDTE::ProjectPtr pProject;
-	EnvDTE::ProjectItemPtr pProjectItem;
-	EnvDTE::CodeElementPtr pDefine;
+	CComPtr<EnvDTE::Project> pProject;
+	CComPtr<EnvDTE::ProjectItem> pProjectItem;
+	CComPtr<EnvDTE::CodeElement> pDefine;
 
 	pClass->pElement->get_ProjectItem(&pProjectItem);
 	pDefine = FindDefine(pProjectItem, Name);
@@ -2454,44 +2519,44 @@ EnvDTE::CodeElementPtr FindDefine(VSClass* pClass, LPCWSTR Name, bool bStdAfx /*
 	if (bStdAfx)
 	{
 		pProjectItem->get_ContainingProject(&pProject);
-		EnvDTE::ProjectItemPtr pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+		CComPtr<EnvDTE::ProjectItem> pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 		return FindDefine(pStdAfxFile, Name);
 	}
 	return pDefine;
 }
 
-EnvDTE::CodeElementPtr FindInclude(EnvDTE::ProjectItemPtr pItem, LPCWSTR Name)
+CComPtr<EnvDTE::CodeElement> FindInclude(CComPtr<EnvDTE::ProjectItem> pItem, LPCWSTR Name)
 {
-	EnvDTE::FileCodeModelPtr pFileCodeModel;
-	VCCodeModelLibrary::VCFileCodeModelPtr pVCFileCodeModel;
+	CComPtr<EnvDTE::FileCodeModel> pFileCodeModel;
+	CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
 	HRESULT hr;
 	hr = pItem->get_FileCodeModel(&pFileCodeModel);
 	ATLASSERT(hr == S_OK);
 	if (hr != S_OK)
-		return EnvDTE::CodeElementPtr();
+		return CComPtr<EnvDTE::CodeElement>();
 
 	pVCFileCodeModel = pFileCodeModel;
 	ATLASSERT(pVCFileCodeModel != NULL);
 
-	EnvDTE::CodeElementsPtr pIncludes;
+	CComPtr<EnvDTE::CodeElements> pIncludes;
 	hr = pVCFileCodeModel->get_Includes(&pIncludes);
 	ATLASSERT(hr == S_OK);
-	EnvDTE::CodeElementPtr pInclude;
+	CComPtr<EnvDTE::CodeElement> pInclude;
 	if ((pIncludes->Item(_variant_t(Name), &pInclude) == S_OK) && (pInclude != NULL))
 	{
 		return pInclude;
 	}
 	else
 	{
-		return EnvDTE::CodeElementPtr();
+		return CComPtr<EnvDTE::CodeElement>();
 	}
 }
 
-EnvDTE::CodeElementPtr FindInclude(VSClass* pClass, LPCWSTR Name, bool bStdAfx /* = false */)
+CComPtr<EnvDTE::CodeElement> FindInclude(VSClass* pClass, LPCWSTR Name, bool bStdAfx /* = false */)
 {
-	EnvDTE::ProjectPtr pProject;
-	EnvDTE::ProjectItemPtr pProjectItem;
-	EnvDTE::CodeElementPtr pInclude;
+	CComPtr<EnvDTE::Project> pProject;
+	CComPtr<EnvDTE::ProjectItem> pProjectItem;
+	CComPtr<EnvDTE::CodeElement> pInclude;
 
 	pClass->pElement->get_ProjectItem(&pProjectItem);
 	pInclude = FindInclude(pProjectItem, Name);
@@ -2500,7 +2565,7 @@ EnvDTE::CodeElementPtr FindInclude(VSClass* pClass, LPCWSTR Name, bool bStdAfx /
 	if (bStdAfx)
 	{
 		pProjectItem->get_ContainingProject(&pProject);
-		EnvDTE::ProjectItemPtr pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+		CComPtr<EnvDTE::ProjectItem> pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 		return FindInclude(pStdAfxFile, Name);
 	}
 	return pInclude;
@@ -2508,21 +2573,23 @@ EnvDTE::CodeElementPtr FindInclude(VSClass* pClass, LPCWSTR Name, bool bStdAfx /
 
 void RemoveCommands()
 {
+	HRESULT hr = E_FAIL;
 	CComPtr<EnvDTE::_DTE> pDTE;
 	pDTE.CoCreateInstance(L"VisualStudio.DTE.8.0");
 	
 	if (pDTE == NULL)
 		return;
 
-	EnvDTE::CommandsPtr pCommands;
+	CComPtr<EnvDTE::Commands> pCommands;
 	UICommandBarsPtr pCommandBars;
 	UICommandBarPtr pHelperCmdBar, pHostCmdBar;
-	EnvDTE::CommandPtr pCmd;
+	CComPtr<EnvDTE::Command> pCmd;
 
 	pDTE->get_Commands(&pCommands);
 	
-
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+	pDTE->get_CommandBars((IDispatch**)&pCommandBars);
+#elif defined(_FOR_VS2005)
 	pDTE->get_CommandBars((IDispatch**)&pCommandBars);
 #else
 	pDTE->get_CommandBars(&pCommandBars);
@@ -2542,7 +2609,8 @@ void RemoveCommands()
 				pControls->get_Item(_variant_t(L"WTL Helper"), &pControl);
 				if (pControl != NULL)
 				{
-					UICommandBarPopupControlPtr pPopup = pControl;
+					UICommandBarPopupControlPtr pPopup; 
+					hr = pControl->QueryInterface(&pPopup);
 					if (pPopup != NULL)
 					{
 						pPopup->get_CommandBar(&pHelperCmdBar);

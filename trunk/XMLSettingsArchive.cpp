@@ -12,7 +12,7 @@ bool CXMLObject::StartObject(LPCTSTR lpName, bool bCreateNew)
 
 	if (bCreateNew)
 	{
-		IXMLDOMElementPtr pNewElem = NULL;
+		CComPtr<MSXML2::IXMLDOMElement> pNewElem = NULL;
 		hr = m_pXMLDoc->createElement(_bstr_t(lpName), &pNewElem);
 		ATLASSERT(SUCCEEDED(hr));
 		if (FAILED(hr))
@@ -36,7 +36,7 @@ bool CXMLObject::StartObject(LPCTSTR lpName, bool bCreateNew)
 	}
 	else
 	{
-		IXMLDOMNodePtr pNewNode;
+		CComPtr<MSXML2::IXMLDOMNode> pNewNode;
 		_bstr_t XPath = lpName;
 		if (m_pXMLNode != NULL)
 		{
@@ -62,7 +62,7 @@ bool CXMLObject::EndObject()
 	ATLASSERT(m_pXMLNode != NULL);
 
 	HRESULT hr;
-	IXMLDOMNodePtr pParent;
+	CComPtr<MSXML2::IXMLDOMNode> pParent;
 	hr = m_pXMLNode->get_parentNode(&pParent);
 	ATLASSERT(SUCCEEDED(hr));
 	if (FAILED(hr))
@@ -97,7 +97,7 @@ bool CXMLStorage::Create(bool bSetHeader /* = false */)
 	if (bSetHeader)
 	{
 		bstr_t Title(L"version=\"1.0\"");
-		IXMLDOMProcessingInstructionPtr pProcInstr;
+		CComPtr<MSXML2::IXMLDOMProcessingInstruction> pProcInstr;
 		//select encoding
 		if (m_pEncoding)
 		{

@@ -32,9 +32,9 @@ typedef CSmartAtlArray<VSClass*> ClassVector;
 
 extern VSFunction* g_pSelectedFunction;
 void UpdateClasses(CSmartAtlArray<InsDelPoints>* pModifications, ClassVector* pClassVector);
-EnvDTE::ProjectItemPtr FindItem(EnvDTE::ProjectPtr pProject, _bstr_t ItemName, EnvDTE::ProjectItemPtr pPrevElem);
-EnvDTE::CodeElementPtr FindDefine(VSClass* pClass, LPCWSTR Name, bool bStdAfx = false);
-EnvDTE::CodeElementPtr FindInclude(VSClass* pClass, LPCWSTR Name, bool bStdAfx = false);
+CComPtr<EnvDTE::ProjectItem> FindItem(EnvDTE::Project * pProject, _bstr_t ItemName, CComPtr<EnvDTE::ProjectItem> pPrevElem);
+CComPtr<EnvDTE::CodeElement> FindDefine(VSClass* pClass, LPCWSTR Name, bool bStdAfx = false);
+CComPtr<EnvDTE::CodeElement> FindInclude(VSClass* pClass, LPCWSTR Name, bool bStdAfx = false);
 
 int CutString(CString InStr, CAtlArray<CString>& OutStrings, LPCTSTR Separators = _T(" \t,"));
 void SortStringArray(CAtlArray<CString>& Arr, bool bAcsesnding = true);

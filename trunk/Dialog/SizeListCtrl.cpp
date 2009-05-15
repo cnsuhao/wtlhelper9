@@ -93,9 +93,18 @@ DWORD CSizeListCtrl::OnSubItemPrePaint(int idCtrl, LPNMCUSTOMDRAW lpNMCustomDraw
 			lf.lfWeight = FW_BOLD;
 		}
 		
+		if (m_NewFont.IsNull() == FALSE) {
+			m_NewFont.Detach(); 
+		}
 		m_NewFont.CreateFontIndirect(&lf);
 		
-		m_OldFont = dc.SelectFont(m_NewFont);
+		HFONT hTmp = dc.SelectFont(m_NewFont);
+
+		if (m_OldFont.IsNull()) {
+			m_OldFont = hTmp;
+		} else { 
+			::DeleteObject((HGDIOBJ)hTmp);
+		}
 	}
 	else
 	{

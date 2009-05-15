@@ -29,18 +29,18 @@ CResourceManager::~CResourceManager(void)
 {
 }
 
-void CResourceManager::AddResourceFiles(EnvDTE::ProjectItemPtr pParentItem, CAtlArray<CString>& Files)
+void CResourceManager::AddResourceFiles(CComPtr<EnvDTE::ProjectItem> pParentItem, CAtlArray<CString>& Files)
 {
-	EnvDTE::ProjectItemsPtr pProjItems;
+	CComPtr<EnvDTE::ProjectItems> pProjItems;
 	HRESULT hr = pParentItem->get_ProjectItems(&pProjItems);
 	if (hr != S_OK || pProjItems == NULL)
 		return;
 	long Count;
 	pProjItems->get_Count(&Count);
-	EnvDTE::ProjectItemPtr pItem;
 
 	for (long i = 1; i <= Count; i++)
 	{
+		CComPtr<EnvDTE::ProjectItem> pItem;
 		pProjItems->Item(_variant_t(i), &pItem);
 		short FilesCount;
 		pItem->get_FileCount(&FilesCount);
@@ -62,19 +62,19 @@ void CResourceManager::AddResourceFiles(EnvDTE::ProjectItemPtr pParentItem, CAtl
 	}
 }
 
-void CResourceManager::GetResourceFiles(EnvDTE::ProjectPtr pProj, CAtlArray<CString>& Files)
+void CResourceManager::GetResourceFiles(EnvDTE::Project * pProj, CAtlArray<CString>& Files)
 {
-	EnvDTE::ProjectItemsPtr pProjItems;
+	CComPtr<EnvDTE::ProjectItems> pProjItems;
 	HRESULT hr = pProj->get_ProjectItems(&pProjItems);
 	if (hr != S_OK || pProjItems == NULL)
 		return;
 
 	long Count;
 	pProjItems->get_Count(&Count);
-	EnvDTE::ProjectItemPtr pItem;
 
 	for (long i = 1; i <= Count; i++)
 	{
+		CComPtr<EnvDTE::ProjectItem> pItem;
 		pProjItems->Item(_variant_t(i), &pItem);
 		short FilesCount;
 		pItem->get_FileCount(&FilesCount);
@@ -114,7 +114,7 @@ void CResourceManager::LoadMenuItemIds(CResMenu& Menu, CAtlArray<CString>& ResId
 //////////////////////////////////////////////////////////////////////////
 // public methods
 
-bool CResourceManager::LoadResources(EnvDTE::ProjectPtr pProj)
+bool CResourceManager::LoadResources(EnvDTE::Project * pProj)
 {
 	CAtlArray<CString> ResFiles;
 	GetResourceFiles(pProj, ResFiles);
@@ -126,7 +126,7 @@ bool CResourceManager::LoadResources(EnvDTE::ProjectPtr pProj)
 	return true;
 }
 
-bool CResourceManager::LoadResources(EnvDTE::ProjectItemPtr pProjItem)
+bool CResourceManager::LoadResources(CComPtr<EnvDTE::ProjectItem> pProjItem)
 {
 	_bstr_t bsFileName;
 	pProjItem->get_FileNames(1, bsFileName.GetAddress());

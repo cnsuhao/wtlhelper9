@@ -37,7 +37,7 @@ struct VSElement;
 struct VSElement
 {
 	CString Name;
-	EnvDTE::CodeElementPtr pElement;
+	CComPtr<EnvDTE::CodeElement> pElement;
 	VSElement* pParent;
 	EnvDTE::vsCMElement ElementType;
 	VSElement(EnvDTE::vsCMElement Type) : pElement(NULL), pParent(NULL), ElementType(Type)
@@ -133,8 +133,8 @@ struct VSMapEntry : public VSFunction
 	VSMapEntry(const VSMapEntry& MapEntry);
 	virtual ~VSMapEntry();
 
-	EnvDTE::EditPointPtr m_pStartPoint;
-	EnvDTE::EditPointPtr m_pEndPoint;
+	CComPtr<EnvDTE::EditPoint> m_pStartPoint;
+	CComPtr<EnvDTE::EditPoint> m_pEndPoint;
 	void* pData;
 };
 
@@ -145,19 +145,19 @@ struct VSMap : public VSElement
 	CString Postfix;
 	HRESULT RetriveMapEntries();
 	VSMap():VSElement(EnvDTE::vsCMElementMap), m_pEndPoint(NULL), m_pStartPoint(NULL){};
-	VSMap(EnvDTE::EditPointPtr pStartPoint) :VSElement(EnvDTE::vsCMElementMap), 
+	VSMap(CComPtr<EnvDTE::EditPoint> pStartPoint) :VSElement(EnvDTE::vsCMElementMap), 
 		m_pEndPoint(NULL), m_pStartPoint(pStartPoint){};
 	virtual ~VSMap();
 	HRESULT GetEndPoint(EnvDTE::EditPoint** ppEditPoint);
 	HRESULT GetStartPoint(EnvDTE::EditPoint** ppEditPoint);
-	HRESULT InsertNewMap(EnvDTE::EditPointPtr pInsertAfter, bool bAfter = true);
+	HRESULT InsertNewMap(CComPtr<EnvDTE::EditPoint> pInsertAfter, bool bAfter = true);
 	HRESULT InsertMapEntry(VSMapEntry* MapEntry);
 	HRESULT Remove();
 	void DeleteAllItems();
 	bool IsSelf();
 protected:
-	EnvDTE::EditPointPtr m_pEndPoint;
-	EnvDTE::EditPointPtr m_pStartPoint;
+	CComPtr<EnvDTE::EditPoint> m_pEndPoint;
+	CComPtr<EnvDTE::EditPoint> m_pStartPoint;
 
 	virtual HRESULT FindPlaceForNewItem(VSMapEntry* MapEntry, EnvDTE::EditPoint** ppStartPoint);
 	//return false when end of map
@@ -210,9 +210,9 @@ struct VSClass : public VSElement
 private:
 	bool m_bRetrieved;
 protected:
-	CString GetDialogID(EnvDTE::CodeElementPtr pElem);
+	CString GetDialogID(EnvDTE::CodeElement * pElem);
 	bool FindPlaceForNewVar(_variant_t& Pos, EnvDTE::vsCMAccess NeededAccess);
-	EnvDTE::EditPointPtr FindLastPublicElement();
+	CComPtr<EnvDTE::EditPoint> FindLastPublicElement();
 	bool FindPlaceForNewMap(EnvDTE::EditPoint** ppEditPoint);
 	bool FindPlaceForNewMessageMap(EnvDTE::EditPoint** ppEditPoint, VSMessageMap* pMap);
 	void RemoveMapMacrosFromFunctions();
@@ -237,7 +237,7 @@ public:
 	m_eDialog(eUnknown), m_bDDX(false), m_bRetrieved(false){};
 	bool IsDialog();
 	
-	HRESULT AddElement(EnvDTE::CodeElementPtr pElement);
+	HRESULT AddElement(CComPtr<EnvDTE::CodeElement> pElement);
 	HRESULT RetriveItems();
 	void DeleteAllItems();
 	VSMap* GetMap(CString MapName);

@@ -26,6 +26,7 @@
 #include "Dialog/DDXVariable.h"
 #include "Dialog/ReflectionDlg.h"
 #include "CustomProjectSettings.h"
+#include "VSElements.h"
 
 CHandlerManager CMessageManager::m_sHandlerManager;
 
@@ -46,7 +47,7 @@ bool CMessageManager::SetHeader(CString HeaderName)
 		if (m_pClass->Headers[i].CompareNoCase(HeaderName) == 0)
 			return true;
 	}
-	EnvDTE::CodeElementPtr pIncludeElem = FindInclude(m_pClass, HeaderName, true);
+	CComPtr<EnvDTE::CodeElement> pIncludeElem = FindInclude(m_pClass, HeaderName, true);
 	if (pIncludeElem == NULL)
 	{
 		VSInclude* pNewInclude = new VSInclude;
@@ -96,20 +97,22 @@ bool CMessageManager::SetWinX()
 
 bool CMessageManager::InsertNewMap(bool bEx /* = false */)
 {
+	HRESULT hr = E_FAIL;
 	CString Postfix;
 	if (bEx)
 	{
 		Postfix = _T("_EX");
 	}
 
-	VSMessageMap* pNewMap = new VSMessageMap;
-	
-	pNewMap->pParent = m_pClass;
+	VSMessageMap* pNewMap = new VSMessageMap();
+
+	pNewMap->pParent = static_cast<VSElement*>(m_pClass);
 	pNewMap->Name = _T("MSG");
 	pNewMap->Postfix = Postfix;
 	VSParameter* pParam = new VSParameter;
 
-	VCCodeModelLibrary::VCCodeClassPtr pClass = m_pClass->pElement;
+	CComPtr<VCCodeModelLibrary::VCCodeClass> pClass; 
+	hr = m_pClass->pElement->QueryInterface(&pClass);
 	_bstr_t DisplayName;
 	pClass->get_DisplayName(DisplayName.GetAddress());
 	pParam->Name = (LPCTSTR)DisplayName;
@@ -156,10 +159,11 @@ CString CMessageManager::CreateHandlerBody(MessageStruct* pMes, bool bCracked /*
 
 int CMessageManager::GetAltMapNumber()
 {
+	HRESULT hr = E_FAIL;
 	VSMessageMap* pRootMap = (VSMessageMap*)m_pClass->GetMap(CString(_T("MSG")));
 
 	int iNumber = 0;
-	EnvDTE::CodeElementsPtr pMacros;//defines
+	CComPtr<EnvDTE::CodeElements> pMacros;//defines
 	for (size_t i = 0; i < pRootMap->AltMaps.GetCount(); i++)
 	{
 		CString Name = pRootMap->AltMaps[i]->Name;
@@ -200,15 +204,16 @@ int CMessageManager::GetAltMapNumber()
 			{
 				if (pMacros == NULL)
 				{
-					EnvDTE::ProjectItemPtr pProjItem;
+					CComPtr<EnvDTE::ProjectItem> pProjItem;
 					m_pClass->pElement->get_ProjectItem(&pProjItem);
 					if (pProjItem != NULL)
 					{
-						EnvDTE::FileCodeModelPtr pCodeModel;
+						CComPtr<EnvDTE::FileCodeModel> pCodeModel;
 						pProjItem->get_FileCodeModel(&pCodeModel);
 						if (pCodeModel != NULL)
 						{
-							VCCodeModelLibrary::VCFileCodeModelPtr pVCCodeModel = pCodeModel;
+							CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCCodeModel; 
+							hr = pCodeModel->QueryInterface(&pVCCodeModel);
 							pVCCodeModel->get_Macros(&pMacros);
 						}
 					}
@@ -217,12 +222,14 @@ int CMessageManager::GetAltMapNumber()
 				{
 					break;
 				}
-				EnvDTE::CodeElementPtr pElem;
+				CComPtr<EnvDTE::CodeElement> pElem;
 				pMacros->Item(_variant_t(Name), &pElem);
 				if (pElem == NULL)
 					break;
-				VCCodeModelLibrary::VCCodeMacroPtr pMacro = pElem;
-				_bstr_t Value = pMacro->Value;
+				CComPtr<VCCodeModelLibrary::VCCodeMacro> pMacro;
+				hr = pElem->QueryInterface(&pMacro);
+				CComBSTR Value;
+				hr = pMacro->get_Value(&Value);
 				if (StrToIntExW(Value, STIF_SUPPORT_HEX, &iNum))
 				{
 					if (iNum > iNumber)
@@ -702,6 +709,7 @@ bool CMessageManager::IsClassSet()
 
 bool CMessageManager::AddMessageMap()
 {
+	HRESULT hr = E_FAIL;
 	bool bExMap = false;
 	int MesRes = MessageBox(m_hParentWnd, _T("Class has no message map!\r\nCreate old style map(Yes) or new style map(No)"), 
 		NULL, MB_YESNOCANCEL);
@@ -717,12 +725,12 @@ bool CMessageManager::AddMessageMap()
 		if (MesRes == IDYES)
 		{
 			//проверить существование stdafx.h
-			EnvDTE::ProjectPtr pProject;
-			EnvDTE::ProjectItemPtr pProjectItem;
+			CComPtr<EnvDTE::Project> pProject;
+			CComPtr<EnvDTE::ProjectItem> pProjectItem;
 			m_pClass->pElement->get_ProjectItem(&pProjectItem);
 			pProjectItem->get_ContainingProject(&pProject);
 
-			EnvDTE::ProjectItemPtr pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+			CComPtr<EnvDTE::ProjectItem> pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 			if (pStdAfxFile == NULL)
 			{
 				if (MessageBox(m_hParentWnd, _T("Cannot locate \"stdafx.h\"!\r\nCreate old style message map?"), NULL, MB_YESNO | MB_ICONERROR) == IDNO)
@@ -730,20 +738,21 @@ bool CMessageManager::AddMessageMap()
 			}
 			else
 			{
-				VCCodeModelLibrary::VCFileCodeModelPtr pVCFileCodeModel;
-				EnvDTE::FileCodeModelPtr pFileCodeModel;
+				CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
+				CComPtr<EnvDTE::FileCodeModel> pFileCodeModel;
 				pStdAfxFile->get_FileCodeModel(&pFileCodeModel);
 				pVCFileCodeModel = pFileCodeModel;
-				EnvDTE::CodeElementsPtr pMacros =  pVCFileCodeModel->Macros;
-				EnvDTE::CodeElementPtr pMacro;
+				CComPtr<EnvDTE::CodeElements> pMacros;
+				hr =  pVCFileCodeModel->get_Macros(&pMacros);
+				CComPtr<EnvDTE::CodeElement> pMacro;
 				if (pMacros->Item(_variant_t(_bstr_t(L"END_MSG_MAP_EX")), &pMacro) == S_OK)
 				{
 					bExMap = true;
 				}
 				else
 				{
-					VCCodeModelLibrary::VCCodeMacroPtr pMacro;
-					pMacro = pVCFileCodeModel->AddMacro(_bstr_t(L"END_MSG_MAP_EX"), _bstr_t(L"END_MSG_MAP"), _variant_t(-1));
+					CComPtr<VCCodeModelLibrary::VCCodeMacro> pMacro;
+					hr = pVCFileCodeModel->AddMacro(_bstr_t(L"END_MSG_MAP_EX"), _bstr_t(L"END_MSG_MAP"), _variant_t(-1), &pMacro);
 					if (pMacro != NULL)
 					{
 						bExMap = true;
@@ -770,6 +779,7 @@ bool CMessageManager::AddMessageMap()
 
 bool CMessageManager::ReplaceMessageMapEnd()
 {
+	HRESULT hr = E_FAIL;
 	if (!m_pMessageMap)
 	{
 		return false;
@@ -780,12 +790,12 @@ bool CMessageManager::ReplaceMessageMapEnd()
 	if (MesRes == IDOK)
 	{
 		//проверить существование stdafx.h
-		EnvDTE::ProjectPtr pProject;
-		EnvDTE::ProjectItemPtr pProjectItem;
+		CComPtr<EnvDTE::Project> pProject;
+		CComPtr<EnvDTE::ProjectItem> pProjectItem;
 		m_pClass->pElement->get_ProjectItem(&pProjectItem);
 		pProjectItem->get_ContainingProject(&pProject);
 
-		EnvDTE::ProjectItemPtr pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), EnvDTE::ProjectItemPtr(NULL));
+		CComPtr<EnvDTE::ProjectItem> pStdAfxFile = FindItem(pProject, _bstr_t(L"stdafx.h"), CComPtr<EnvDTE::ProjectItem>(NULL));
 		if (pStdAfxFile == NULL)
 		{
 			MessageBox(m_hParentWnd, _T("Cannot locate \"stdafx.h\"!\r\nCreate old style message map?"), NULL, MB_OK | MB_ICONERROR);
@@ -793,16 +803,17 @@ bool CMessageManager::ReplaceMessageMapEnd()
 		}
 		else
 		{
-			VCCodeModelLibrary::VCFileCodeModelPtr pVCFileCodeModel;
-			EnvDTE::FileCodeModelPtr pFileCodeModel;
+			CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
+			CComPtr<EnvDTE::FileCodeModel> pFileCodeModel;
 			pStdAfxFile->get_FileCodeModel(&pFileCodeModel);
 			pVCFileCodeModel = pFileCodeModel;
-			EnvDTE::CodeElementsPtr pMacros =  pVCFileCodeModel->Macros;
-			EnvDTE::CodeElementPtr pMacro;
+			CComPtr<EnvDTE::CodeElements> pMacros;
+			hr =  pVCFileCodeModel->get_Macros(&pMacros);
+			CComPtr<EnvDTE::CodeElement> pMacro;
 			if (pMacros->Item(_variant_t(_bstr_t(L"END_MSG_MAP_EX")), &pMacro) != S_OK)
 			{
-				VCCodeModelLibrary::VCCodeMacroPtr pMacro;
-				pMacro = pVCFileCodeModel->AddMacro(_bstr_t(L"END_MSG_MAP_EX"), _bstr_t(L"END_MSG_MAP"), _variant_t(-1));
+				CComPtr<VCCodeModelLibrary::VCCodeMacro> pMacro;
+				hr = pVCFileCodeModel->AddMacro(_bstr_t(L"END_MSG_MAP_EX"), _bstr_t(L"END_MSG_MAP"), _variant_t(-1), &pMacro);
 				if (pMacro == NULL)
 				{
 					MessageBox(m_hParentWnd, _T("Cannot add macro END_MSG_MAP_EX!"), NULL, MB_OK | MB_ICONERROR);

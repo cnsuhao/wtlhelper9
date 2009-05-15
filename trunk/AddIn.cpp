@@ -2,11 +2,15 @@
 
 #include "stdafx.h"
 #include "resource.h"
-#ifdef _FOR_VS2005
+
+#if defined(_FOR_VS2008)
+#include "AddIn9.h"
+#elif defined(_FOR_VS2005)
 #include "AddIn8.h"
 #else
 #include "AddIn.h"
 #endif
+
 #include "RegArchive.h"
 #include "TextFile.h"
 #include "dialog/FunctionPage.h"
@@ -60,13 +64,17 @@ STDAPI DllUnregisterServer(void)
 
 void UnregisterCommands()
 {
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+	CString strVSKey = _T("Software\\Microsoft\\VisualStudio\\9.0\\Setup\\VS");
+	CString strCmd = _T(" /command WtlHelper.Connect9.Uninstall");
+#elif defined(_FOR_VS2005)
 	CString strVSKey = _T("Software\\Microsoft\\VisualStudio\\8.0\\Setup\\VS");
 	CString strCmd = _T(" /command WtlHelper.Connect8.Uninstall");
 #else
 	CString strVSKey = _T("Software\\Microsoft\\VisualStudio\\7.1\\Setup\\VS");
 	CString strCmd = _T(" /setup");
 #endif
+
 	CString strParam = _T("EnvironmentPath");
 	CRegKey RegKey;
 	LONG Res;

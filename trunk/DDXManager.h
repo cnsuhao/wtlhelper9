@@ -38,8 +38,8 @@ class CDDXManager : public CSettings<CDDXManager>
 	void SetAtlDDX(VSClass* pClass, bool bUseFloat = false);
 	bool InsertNewMap(CString MapName);
 	bool CheckCString(VSClass* pClass);
-	void InsertWtlCString(EnvDTE::ProjectPtr pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints, int Place);
-	void InsertAtlCString(EnvDTE::ProjectPtr pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints);
+	void InsertWtlCString(CComPtr<EnvDTE::Project> pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints, int Place);
+	void InsertAtlCString(CComPtr<EnvDTE::Project> pProject, CSmartAtlArray<InsertionPoint*>& CurInsPoints);
 public:
 	CDDXManager(void);
 	~CDDXManager(void);

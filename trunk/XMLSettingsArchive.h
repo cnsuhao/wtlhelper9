@@ -1,13 +1,13 @@
 #pragma once
 #include "settings.h"
-#import <msxml3.dll>
+#import <msxml3.dll> raw_interfaces_only no_implementation no_smart_pointers named_guids
 #include "Convert.h"
 
 class CXMLObject
 {
 protected:
-	IXMLDOMDocumentPtr m_pXMLDoc;
-	IXMLDOMElementPtr m_pXMLNode;
+	CComPtr<MSXML2::IXMLDOMDocument> m_pXMLDoc;
+	CComPtr<MSXML2::IXMLDOMElement> m_pXMLNode;
 	CXMLObject(){};
 public:
 	class CXMLIterator;
@@ -18,7 +18,7 @@ public:
 	private:
 		CXMLObject* m_pObject;
 	public:
-		CXMLIterator(IXMLDOMDocumentPtr pDoc, IXMLDOMElementPtr pNode)
+		CXMLIterator(CComPtr<MSXML2::IXMLDOMDocument> pDoc, CComPtr<MSXML2::IXMLDOMElement> pNode)
 		{
 			m_pObject = new CXMLObject(pDoc, pNode);
 		}
@@ -42,7 +42,7 @@ public:
 		bool operator++(int)
 		{
 			ATLASSERT(m_pObject->m_pXMLNode != NULL);
-			IXMLDOMNodePtr pNode;
+			CComPtr<MSXML2::IXMLDOMNode> pNode;
 			HRESULT hr;
 			hr = m_pObject->m_pXMLNode->get_nextSibling(&pNode);
 			m_pObject->m_pXMLNode = pNode;
@@ -60,7 +60,7 @@ public:
 		}
 	};
 
-	CXMLObject(IXMLDOMDocumentPtr pDoc, IXMLDOMElementPtr pNode) : 
+	CXMLObject(CComPtr<MSXML2::IXMLDOMDocument> pDoc, CComPtr<MSXML2::IXMLDOMElement> pNode) : 
 	m_pXMLDoc(pDoc), m_pXMLNode(pNode)
 	{
 		ATLASSERT(pDoc != NULL);
@@ -71,7 +71,7 @@ public:
 	{
 		ATLASSERT(m_pXMLDoc != NULL);
 
-		IXMLDOMNodePtr pNode;
+		CComPtr<MSXML2::IXMLDOMNode> pNode;
 		if (m_pXMLNode != NULL)
 		{
 			m_pXMLNode->get_firstChild(&pNode);
@@ -80,8 +80,11 @@ public:
 		{
 			m_pXMLDoc->get_firstChild(&pNode);
 		}
+
+		CComPtr<MSXML2::IXMLDOMElement> spTmp;
+		pNode->QueryInterface(&spTmp);
 		
-		return CXMLIterator(m_pXMLDoc, pNode);
+		return CXMLIterator(m_pXMLDoc, spTmp);
 	}
 	_bstr_t GetName()
 	{
@@ -107,7 +110,7 @@ public:
 	{
 		ATLASSERT(m_pXMLDoc != NULL);
 
-		IXMLDOMElementPtr pElem;
+		CComPtr<MSXML2::IXMLDOMElement> pElem;
 		HRESULT hr;
 
 		hr = m_pXMLDoc->createElement(_bstr_t(lpName), &pElem);
@@ -122,7 +125,11 @@ public:
 
 		if (m_pXMLNode == NULL)
 		{
-			hr = m_pXMLNode->appendChild(pElem, (IXMLDOMNode**)&m_pXMLNode);
+			CComPtr<MSXML2::IXMLDOMNode> spTmp;
+			hr = m_pXMLNode->appendChild(pElem, &spTmp);
+			if (SUCCEEDED(hr)) {
+				hr = spTmp->QueryInterface(&m_pXMLNode);
+			}
 		}
 		else
 		{
@@ -177,7 +184,7 @@ public:
 	{
 		ATLASSERT(m_pXMLNode != NULL);
 
-		IXMLDOMNodePtr pSubElem;
+		CComPtr<MSXML2::IXMLDOMNode> pSubElem;
 		HRESULT hr;
 		hr = m_pXMLNode->selectSingleNode(_bstr_t(lpName), &pSubElem);
 		ATLASSERT(SUCCEEDED(hr));

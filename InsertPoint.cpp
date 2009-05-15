@@ -321,9 +321,14 @@ HRESULT InsertInclude::Insert(VSClass* pClass, int Step)
 		pProjectItem->get_FileCodeModel(&pFileCodeModel);
 		CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
 		hr = pFileCodeModel->QueryInterface(&pVCFileCodeModel);
-		
-		CComPtr<VCCodeModelLibrary::VCCodeInclude> spDummy;
-		pInclude = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name), Pos, &spDummy);
+		if (SUCCEEDED(hr))
+		{
+			CComPtr<VCCodeModelLibrary::VCCodeInclude> spDummy;
+			hr = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name), Pos, &spDummy);
+			if (SUCCEEDED(hr)) {
+				hr = spDummy->QueryInterface(&pInclude);
+			}
+		}
 	}
 	if (Step == INSERT_STEP_GLOBAL)
 	{

@@ -373,8 +373,8 @@ void GetStackTrace(HANDLE hThread, DWORD64 ranOffsets[][2], ULONG nMaxStack )
 	unsigned long StackPtr;
 	unsigned long BasePtr; 
 
-	__asm mov [StackPtr], esp
-	__asm mov [BasePtr], ebp
+	__asm mov [StackPtr], esp;
+	__asm mov [BasePtr], ebp;
 
 	callStack.AddrPC.Offset      = MyAddress; 
 	callStack.AddrPC.Mode        = AddrModeFlat;

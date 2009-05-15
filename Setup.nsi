@@ -75,6 +75,8 @@ Section "WTL Helper" SEC01
   RegDLL "$INSTDIR\WtlHelper.dll"
   File "Release2005\WtlHelper8.dll"
   RegDLL "$INSTDIR\WtlHelper8.dll"
+  File "Release2008\WtlHelper9.dll"
+  RegDLL "$INSTDIR\WtlHelper9.dll"
   File "messages.xml"
   File "common.xml"
   SetOutPath "$INSTDIR\1033"
@@ -103,6 +105,17 @@ Section "WTL Helper" SEC01
   WriteRegStr HKLM "SOFTWARE\Microsoft\VisualStudio\8.0\Addins\WtlHelper.Connect8" "AboutBoxDetails" "WTL Helper is powerful tool that helps using WTL."
   WriteRegDWORD HKCU "SOFTWARE\Microsoft\VSA\8.0\PreloadAddinState" "WtlHelper.Connect8" 1
   WriteRegDWORD HKCU "SOFTWARE\Microsoft\VisualStudio\8.0\PreloadAddinState" "WtlHelper.Connect8" 1
+;Visual Studio 2008  
+  WriteRegDWORD HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "CommandLineSafe" 0
+  WriteRegDWORD HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "CommandPreload" 1
+  WriteRegDWORD HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "LoadBehavior" 3
+  WriteRegStr HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "Description" "Class Wizard for WTL"
+  WriteRegStr HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "FriendlyName" "WTL Helper"
+  WriteRegStr HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "SatelliteDLLPath" "$INSTDIR"
+  WriteRegStr HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "SatelliteDLLName" "WtlHelperRes.dll"
+  WriteRegStr HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9" "AboutBoxDetails" "WTL Helper is powerful tool that helps using WTL."
+  WriteRegDWORD HKCU "SOFTWARE\Microsoft\VSA\9.0\PreloadAddinState" "WtlHelper.Connect9" 1
+  WriteRegDWORD HKCU "SOFTWARE\Microsoft\VisualStudio\9.0\PreloadAddinState" "WtlHelper.Connect9" 1
 ; Shortcuts
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
   !insertmacro MUI_STARTMENU_WRITE_END
@@ -152,18 +165,22 @@ Section Uninstall
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\messages.xml"
   Delete "$INSTDIR\common.xml"
-  
-  UnRegDLL "$INSTDIR\WtlHelper8.dll"
-  Delete "$INSTDIR\WtlHelper8.dll"
+
   DeleteRegKey HKLM "SOFTWARE\Microsoft\VisualStudio\7.1\Addins\WtlHelper.Connect"
   UnRegDLL "$INSTDIR\WtlHelper.dll"
   Delete "$INSTDIR\WtlHelper.dll"
-  
-  Delete "$INSTDIR\1033\WtlHelperRes.dll"
-  
-  
+
   DeleteRegKey HKLM "SOFTWARE\Microsoft\VisualStudio\8.0\Addins\WtlHelper.Connect8"
   DeleteRegKey HKLM "Software\SaloS\WtlHelper"
+  UnRegDLL "$INSTDIR\WtlHelper8.dll"
+  Delete "$INSTDIR\WtlHelper8.dll"
+
+  DeleteRegKey HKLM "SOFTWARE\Microsoft\VisualStudio\9.0\Addins\WtlHelper.Connect9"
+  DeleteRegKey HKLM "Software\SaloS\WtlHelper"
+  UnRegDLL "$INSTDIR\WtlHelper9.dll"
+  Delete "$INSTDIR\WtlHelper9.dll"
+
+  Delete "$INSTDIR\1033\WtlHelperRes.dll"
 
   Delete "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk"
 

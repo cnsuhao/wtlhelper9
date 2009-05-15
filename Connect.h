@@ -27,24 +27,36 @@
 #include <atlcoll.h>
 #include "ResourceManager.h"
 
-#ifdef _FOR_VS2005
-using namespace Microsoft_VisualStudio_CommandBars;
+#if defined(_FOR_VS2008)
 
-typedef CommandBarPtr UICommandBarPtr;
-typedef CommandBarControlPtr UICommandBarControlPtr;
-typedef _CommandBarsPtr UICommandBarsPtr;
-typedef CommandBarPopupPtr UICommandBarPopupControlPtr;
-typedef CommandBarControlsPtr UICommandBarControlsPtr;
+using namespace Microsoft_VisualStudio_CommandBars;
+typedef CComPtr<CommandBar> UICommandBarPtr;
+typedef CComPtr<CommandBarControl> UICommandBarControlPtr;
+typedef CComPtr<_CommandBars> UICommandBarsPtr;
+typedef CComPtr<CommandBarPopup> UICommandBarPopupControlPtr;
+typedef CComPtr<CommandBarControls> UICommandBarControlsPtr;
 typedef CommandBarControl UICommandBarControl;
+
+#elif defined(_FOR_VS2005)
+
+using namespace Microsoft_VisualStudio_CommandBars;
+typedef CComPtr<CommandBar> UICommandBarPtr;
+typedef CComPtr<CommandBarControl> UICommandBarControlPtr;
+typedef CComPtr<_CommandBars> UICommandBarsPtr;
+typedef CComPtr<CommandBarPopup> UICommandBarPopupControlPtr;
+typedef CComPtr<CommandBarControls> UICommandBarControlsPtr;
+typedef CommandBarControl UICommandBarControl;
+
 #else
 
 using namespace Office;
-typedef CommandBarPtr UICommandBarPtr;
-typedef CommandBarControlPtr UICommandBarControlPtr;
-typedef _CommandBarsPtr UICommandBarsPtr;
-typedef CommandBarPopupPtr UICommandBarPopupControlPtr;
-typedef CommandBarControlsPtr UICommandBarControlsPtr;
+typedef CComPtr<CommandBar> UICommandBarPtr;
+typedef CComPtr<CommandBarControl> UICommandBarControlPtr;
+typedef CComPtr<_CommandBars> UICommandBarsPtr;
+typedef CComPtr<CommandBarPopup> UICommandBarPopupControlPtr;
+typedef CComPtr<CommandBarControls> UICommandBarControlsPtr;
 typedef CommandBarControl UICommandBarControl;
+
 #endif
 
 enum eWizardsErrors
@@ -95,11 +107,14 @@ struct CommandStruct
 // CConnect
 class ATL_NO_VTABLE CConnect : 
 	public CComObjectRootEx<CComSingleThreadModel>,
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+	public CComCoClass<CConnect, &CLSID_Connect9>,
+#elif defined(_FOR_VS2005)
 	public CComCoClass<CConnect, &CLSID_Connect8>,
 #else
 	public CComCoClass<CConnect, &CLSID_Connect>,
 #endif
+
 	public IDispatchImpl<EnvDTE::IDTCommandTarget, &EnvDTE::IID_IDTCommandTarget, &EnvDTE::LIBID_EnvDTE, 7, 0>,
 	public IDispatchImpl<AddInDesignerObjects::_IDTExtensibility2, &AddInDesignerObjects::IID__IDTExtensibility2, &AddInDesignerObjects::LIBID_AddInDesignerObjects, 1, 0>
 {
@@ -113,11 +128,14 @@ public:
 	CConnect()
 	{
 	}
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+	DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN9)
+#elif defined(_FOR_VS2005)
 	DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN8)
 #else
 	DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN)
 #endif
+
 	DECLARE_NOT_AGGREGATABLE(CConnect)
 
 	BEGIN_COM_MAP(CConnect)
@@ -136,17 +154,17 @@ public:
 	void FinalRelease() 
 	{
 	}
-	HRESULT GetActiveProject(EnvDTE::ProjectPtr& pProj);
-	HRESULT GetSelectedProject(EnvDTE::ProjectPtr& pProj);
-	HRESULT GetClasses(EnvDTE::ProjectPtr pProj, CSmartAtlArray<VSClass*>& Classes);
-	HRESULT AddClassToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlArray<VSClass*>& Classes, VSClass* pParent = NULL);
-	HRESULT AddNamespaceToVector(EnvDTE::CodeElementPtr pItem, CSmartAtlArray<VSClass*>& Classes);
-	CString  GetActiveClass(EnvDTE::TextPointPtr& pCurPoint);
+	HRESULT GetActiveProject(CComPtr<EnvDTE::Project> & pProj);
+	HRESULT GetSelectedProject(CComPtr<EnvDTE::Project>& pProj);
+	HRESULT GetClasses(EnvDTE::Project * pProj, CSmartAtlArray<VSClass*>& Classes);
+	HRESULT AddClassToVector(CComPtr<EnvDTE::CodeElement> pItem, CSmartAtlArray<VSClass*>& Classes, VSClass* pParent = NULL);
+	HRESULT AddNamespaceToVector(CComPtr<EnvDTE::CodeElement> pItem, CSmartAtlArray<VSClass*>& Classes);
+	CString  GetActiveClass(CComPtr<EnvDTE::TextPoint>& pCurPoint);
 	int GetActiveClass(CSmartAtlArray<VSClass*>& Classes, CString ClassName);
-	void GetBases(EnvDTE::CodeElementPtr pElem, CAtlArray<CString>& Bases);
+	void GetBases(CComPtr<EnvDTE::CodeElement> pElem, CAtlArray<CString>& Bases);
 	void GetAllBases(VSClass* pClass, CAtlArray<CString>& Bases);
-	bool ShowWTLHelper(EnvDTE::ProjectPtr pProj, CString ActiveClass, int ActivePage);
-	EnvDTE::CodeClassPtr GetSelectedClass(EnvDTE::ProjectPtr& pProj);
+	bool ShowWTLHelper(CComPtr<EnvDTE::Project> pProj, CString ActiveClass, int ActivePage);
+	CComPtr<EnvDTE::CodeClass> GetSelectedClass(CComPtr<EnvDTE::Project> & pProj);
 	// return resource type of current resource window or empty for no resource windows
 	CString GetActiveResourceType(CString& ResourceID, CString& FileName);
 	bool IsPossibleResourceType(CString ResourceType);
@@ -157,11 +175,11 @@ public:
 	void SaveResourceDocuments();
 	HRESULT AddDialogHandler(CString RCFile, CString DialogID);
 	HRESULT AddIDHandler(CString RCFile, CString ResID, CString ResType);
-	EnvDTE::CodeElementPtr GetClassFromMember(EnvDTE::CodeElementPtr pMember);
-	EnvDTE::wizardResult CreateDialogClass(EnvDTE::ProjectPtr pProj, CString DialogID, bool bShow = false);
+	CComPtr<EnvDTE::CodeElement> GetClassFromMember(CComPtr<EnvDTE::CodeElement> pMember);
+	EnvDTE::wizardResult CreateDialogClass(CComPtr<EnvDTE::Project> pProj, CString DialogID, bool bShow = false);
 	eWizardsErrors GetWTLDLGWizardPath(CString& Path, LPCTSTR lpMinVersion);
 	// return S_FALSE if showed main WTL Helper dialog, S_OK if it is need to continue or E_FAIL if any error
-	HRESULT PrepareDlgClass(EnvDTE::ProjectPtr& pProj, CSmartAtlArray<VSClass*>& Classes, int& iDlgClass, CAtlArray<CString>& Controls, CResourceManager* pResManager);
+	HRESULT PrepareDlgClass(CComPtr<EnvDTE::Project> & pProj, CSmartAtlArray<VSClass*>& Classes, int& iDlgClass, CAtlArray<CString>& Controls, CResourceManager* pResManager);
 public:
 	//IDTExtensibility2 implementation:
 	STDMETHOD(OnConnection)(IDispatch * Application, AddInDesignerObjects::ext_ConnectMode ConnectMode, IDispatch *AddInInst, SAFEARRAY **custom);
@@ -187,8 +205,12 @@ public:
 	STDMETHOD(DoResViewContextHandler)();
 	STDMETHOD(DoResViewContextDialog)();
 	STDMETHOD(CreateCommand)(EnvDTE::Commands* pCommands, const CommandStruct* pCmd);
-#ifdef _FOR_VS2005
+
+#if defined(_FOR_VS2008)
 	STDMETHOD(UninstallAddin)();
+#elif defined(_FOR_VS2005)
+	STDMETHOD(UninstallAddin)();
+#else
 #endif
 
 	CComPtr<EnvDTE::_DTE> m_pDTE;
@@ -198,9 +220,10 @@ private:
 	
 };
 
-#ifdef _FOR_VS2005
+#if defined(_FOR_VS2008)
+OBJECT_ENTRY_AUTO(__uuidof(Connect9), CConnect)
+#elif defined(_FOR_VS2005)
 OBJECT_ENTRY_AUTO(__uuidof(Connect8), CConnect)
 #else
 OBJECT_ENTRY_AUTO(__uuidof(Connect), CConnect)
 #endif
-

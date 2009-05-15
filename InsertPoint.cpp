@@ -70,21 +70,24 @@ InsertPointAltMap::InsertPointAltMap(int iType) : InsertionPoint(iType)
 
 HRESULT InsertPointAltMap::Insert(VSClass* pClass, int Step)
 {
+	HRESULT hr = E_FAIL;
 	VSMessageMap* pMesMap = (VSMessageMap*)pElement;
 	if (Step == INSERT_STEP_ENVDTE && !DefineName.IsEmpty())
 	{
-		EnvDTE::ProjectItemPtr pProjItem;
+		CComPtr<EnvDTE::ProjectItem> pProjItem;
 		pClass->pElement->get_ProjectItem(&pProjItem);
 		if (pProjItem != NULL)
 		{
-			EnvDTE::FileCodeModelPtr pCodeModel;
+			CComPtr<EnvDTE::FileCodeModel> pCodeModel;
 			pProjItem->get_FileCodeModel(&pCodeModel);
 			if (pCodeModel != NULL)
 			{
-				VCCodeModelLibrary::VCFileCodeModelPtr pVCCodeModel = pCodeModel;
+				CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCCodeModel;
+				hr = pCodeModel->QueryInterface(&pVCCodeModel);
 				if (pVCCodeModel != NULL)
 				{
-					pVCCodeModel->AddMacro(_bstr_t(pElement->Name), _bstr_t(DefineName));
+					CComPtr<VCCodeModelLibrary::VCCodeMacro> spDummy;
+					pVCCodeModel->AddMacro(_bstr_t(pElement->Name), _bstr_t(DefineName), vtMissing, &spDummy);
 				}
 			}
 		}
@@ -168,7 +171,7 @@ HRESULT InsertPointDDX::Insert(VSClass* pClass, int Step)
 				pFunc->pParent = pClass;
 				pFunc->Access = EnvDTE::vsCMAccessPublic;
 				pClass->Functions.Add(pFunc);
-				EnvDTE::CodeFunctionPtr pCodeFunc;
+				CComPtr<EnvDTE::CodeFunction> pCodeFunc;
 				_bstr_t ClassName;
 				pClass->pElement->get_Name(ClassName.GetAddress());
 				pFunc->Name = (LPCTSTR)ClassName;
@@ -187,7 +190,9 @@ HRESULT InsertPointDDX::Insert(VSClass* pClass, int Step)
 
 HRESULT InsertPointDDX::AddInitializer(VSFunction* pFunc)
 {
-	VCCodeModelLibrary::VCCodeFunctionPtr pVCFunc = pFunc->pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeFunction> pVCFunc;
+	hr = pFunc->pElement->QueryInterface(&pVCFunc);
 	ATLASSERT(pVCFunc != NULL);
 	CString InitString;
 	InitString.Format(_T("%s(%s)"), pVariable->Name, Initializer);
@@ -203,6 +208,7 @@ InsertPointFunc(iType)
 
 HRESULT InsertSpecFunction::Insert(VSClass* pClass, int Step)
 {
+	HRESULT hr = E_FAIL;
 	if (Step == INSERT_STEP_ENVDTE)
 	{
 		HRESULT hr = pClass->InsertFunction((VSFunction*)pElement, Body);
@@ -241,7 +247,8 @@ HRESULT InsertSpecFunction::Insert(VSClass* pClass, int Step)
 				for (size_t i = 0; i < MapEntries.GetCount(); i++)
 				{
 					pFunc = (VSFunction*)MapEntries[i]->pData;
-					VCCodeModelLibrary::VCCodeFunctionPtr pVCFunc = pFunc->pElement;
+					CComPtr<VCCodeModelLibrary::VCCodeFunction> pVCFunc;
+					hr = pFunc->pElement->QueryInterface(&pVCFunc);
 					ATLASSERT(pVCFunc != NULL);
 					_bstr_t FuncBody;
 					pVCFunc->get_BodyText(FuncBody.GetAddress());
@@ -267,7 +274,8 @@ HRESULT InsertSpecFunction::Insert(VSClass* pClass, int Step)
 				for (size_t i = 0; i < MapEntries.GetCount(); i++)
 				{
 					pFunc = (VSFunction*)MapEntries[i]->pData;
-					VCCodeModelLibrary::VCCodeFunctionPtr pVCFunc = pFunc->pElement;
+					CComPtr<VCCodeModelLibrary::VCCodeFunction> pVCFunc;
+					hr = pFunc->pElement->QueryInterface(&pVCFunc);
 					ATLASSERT(pVCFunc != NULL);
 					_bstr_t FuncBody;
 					pVCFunc->get_BodyText(FuncBody.GetAddress());
@@ -297,9 +305,10 @@ InsertInclude::~InsertInclude()
 
 HRESULT InsertInclude::Insert(VSClass* pClass, int Step)
 {
+	HRESULT hr = E_FAIL;
 	if (Step == INSERT_STEP_ENVDTE)
 	{
-		EnvDTE::ProjectItemPtr pProjectItem;
+		CComPtr<EnvDTE::ProjectItem> pProjectItem;
 		if (pProjectFile != NULL)
 		{
 			pProjectItem = pProjectFile;
@@ -308,18 +317,20 @@ HRESULT InsertInclude::Insert(VSClass* pClass, int Step)
 		{
 			pClass->pElement->get_ProjectItem(&pProjectItem);
 		}
-		EnvDTE::FileCodeModelPtr pFileCodeModel;
+		CComPtr<EnvDTE::FileCodeModel> pFileCodeModel;
 		pProjectItem->get_FileCodeModel(&pFileCodeModel);
-		VCCodeModelLibrary::VCFileCodeModelPtr pVCFileCodeModel = pFileCodeModel;
-						
-		pInclude = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name), Pos);
+		CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
+		hr = pFileCodeModel->QueryInterface(&pVCFileCodeModel);
+		
+		CComPtr<VCCodeModelLibrary::VCCodeInclude> spDummy;
+		pInclude = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name), Pos, &spDummy);
 	}
 	if (Step == INSERT_STEP_GLOBAL)
 	{
 		if (pInclude != NULL && !AdditionalMacro.IsEmpty())
 		{
-			EnvDTE::TextPointPtr pTextPoint;
-			EnvDTE::EditPointPtr pEditPoint;
+			CComPtr<EnvDTE::TextPoint> pTextPoint;
+			CComPtr<EnvDTE::EditPoint> pEditPoint;
 			pInclude->get_StartPoint(&pTextPoint);
 			pTextPoint->CreateEditPoint(&pEditPoint);
 			_bstr_t MacroText = CString(_T("#define ")) + AdditionalMacro + _T("\r\n");
@@ -345,23 +356,29 @@ InsertPointDDXSupport::~InsertPointDDXSupport()
 
 HRESULT InsertPointDDXSupport::Insert(VSClass* pClass, int Step)
 {
+	HRESULT hr = E_FAIL;
 	if (Step == INSERT_STEP_ENVDTE)
 	{
-		EnvDTE::ProjectItemPtr pProjectItem;
+		CComPtr<EnvDTE::ProjectItem> pProjectItem;
 		pClass->pElement->get_ProjectItem(&pProjectItem);
-		EnvDTE::FileCodeModelPtr pFileCodeModel;
+		CComPtr<EnvDTE::FileCodeModel> pFileCodeModel;
 		pProjectItem->get_FileCodeModel(&pFileCodeModel);
-		VCCodeModelLibrary::VCFileCodeModelPtr pVCFileCodeModel = pFileCodeModel;
+		CComPtr<VCCodeModelLibrary::VCFileCodeModel> pVCFileCodeModel;
+		hr = pFileCodeModel->QueryInterface(&pVCFileCodeModel);
 		ATLASSERT(pVCFileCodeModel != NULL);
-		EnvDTE::CodeElementPtr pElem;
+		CComPtr<EnvDTE::CodeElement> pElem;
 		if (pElement)
 		{
 			ATLASSERT(pElement->ElementType == EnvDTE::vsCMElementIncludeStmt);
-			pElem = pElement->pElement = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name));
+			CComPtr<VCCodeModelLibrary::VCCodeInclude> spTmp;
+			hr = pVCFileCodeModel->AddInclude(_bstr_t(pElement->Name), CComVariant(), &spTmp);
+			hr = spTmp->QueryInterface(&pElement->pElement);
+			pElem = pElement->pElement;
 		}
 		else
 		{
-			EnvDTE::CodeElementsPtr pIncludes = pVCFileCodeModel->Includes;
+			CComPtr<EnvDTE::CodeElements> pIncludes;
+			hr = pVCFileCodeModel->get_Includes(&pIncludes);
 			HRESULT hr = pIncludes->Item(_variant_t(L"<atlddx.h>"), &pElem);
 			if (FAILED(hr))
 				return hr;
@@ -369,16 +386,17 @@ HRESULT InsertPointDDXSupport::Insert(VSClass* pClass, int Step)
 		if (bUseFloat)
 		{
 			ATLASSERT(pElem != NULL);
-			EnvDTE::TextPointPtr pTextPoint;
+			CComPtr<EnvDTE::TextPoint> pTextPoint;
 			pElem->GetStartPoint(EnvDTE::vsCMPartWholeWithAttributes, &pTextPoint);
 			ATLASSERT(pTextPoint != NULL);
 			pTextPoint->CreateEditPoint(&pFloatPoint);
 		}
 		if (pBase)
 		{
-			VCCodeModelLibrary::VCCodeClassPtr pVCClass = pClass->pElement;
+			CComPtr<VCCodeModelLibrary::VCCodeClass> pVCClass;
+			hr = pClass->pElement->QueryInterface(&pVCClass);
 			ATLASSERT(pVCClass != NULL);
-			HRESULT hr = pVCClass->raw_AddBase(_variant_t(pBase->Name), _variant_t(-1), &pBase->pElement);
+			HRESULT hr = pVCClass->AddBase(_variant_t(pBase->Name), _variant_t(-1), &pBase->pElement);
 
 			return hr;
 		}

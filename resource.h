@@ -74,6 +74,7 @@
 #define IDS_TOOLTIP_NEW_STYLE           237
 #define IDS_TOOLTIP_FUNCTION_NAME       238
 #define IDC_CHECK_INLINE                239
+#define IDR_ADDIN9                      239
 #define IDC_COMBO_DDX_TYPE              240
 #define IDC_COMBO_MEMBER_TYPE           241
 #define IDC_COMBO_ID                    242
@@ -153,7 +154,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        239
+#define _APS_NEXT_RESOURCE_VALUE        240
 #define _APS_NEXT_COMMAND_VALUE         32776
 #define _APS_NEXT_CONTROL_VALUE         309
 #define _APS_NEXT_SYMED_VALUE           115

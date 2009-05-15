@@ -122,13 +122,13 @@ struct InsertSpecFunction : public InsertPointFunc
 struct InsertInclude : public InsertionPoint
 {
 	HRESULT Insert(VSClass* pClass, int Step);
-	EnvDTE::ProjectItemPtr pProjectFile;
+	CComPtr<EnvDTE::ProjectItem> pProjectFile;
 	_variant_t Pos;
 	CString AdditionalMacro;
 	InsertInclude(int iType = INSERT_POINT_INCLUDE);
 	~InsertInclude();
 private:
-	EnvDTE::CodeElementPtr pInclude;
+	CComPtr<EnvDTE::CodeElement> pInclude;
 };
 
 struct InsertPointDDXSupport : public InsertionPoint
@@ -139,7 +139,7 @@ struct InsertPointDDXSupport : public InsertionPoint
 	InsertPointDDXSupport(int Type = INSERT_POINT_DDXSUPPORT);
 	~InsertPointDDXSupport();
 private:
-	EnvDTE::EditPointPtr pFloatPoint;
+	CComPtr<EnvDTE::EditPoint> pFloatPoint;
 };
 
 struct InsertPointReplaceEndMap : public InsertionPoint

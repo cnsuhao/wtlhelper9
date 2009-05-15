@@ -13,15 +13,15 @@ class CResourceManager
 {
 	CResources m_Resources;
 
-	void AddResourceFiles(EnvDTE::ProjectItemPtr pParentItem, CAtlArray<CString>& Files);
-	void GetResourceFiles(EnvDTE::ProjectPtr pProj, CAtlArray<CString>& Files);
+	void AddResourceFiles(CComPtr<EnvDTE::ProjectItem> pParentItem, CAtlArray<CString>& Files);
+	void GetResourceFiles(EnvDTE::Project * pProj, CAtlArray<CString>& Files);
 	static void LoadMenuItemIds(CResMenu& Menu, CAtlArray<CString>& ResIds);
 public:
 	CResourceManager(void);
 	~CResourceManager(void);
 
-	bool LoadResources(EnvDTE::ProjectPtr pProj);
-	bool LoadResources(EnvDTE::ProjectItemPtr pProjItem);
+	bool LoadResources(EnvDTE::Project * pProj);
+	bool LoadResources(CComPtr<EnvDTE::ProjectItem> pProjItem);
 
 	const CResources* GetResources();
 	const CResDialog* GetDialog(const CString lpDlgID) const;

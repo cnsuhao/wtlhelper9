@@ -26,7 +26,7 @@
 HRESULT VSElement::GetEndPoint(EnvDTE::EditPoint** ppEditPoint)
 {
 	ATLASSERT(pElement != NULL);
-	EnvDTE::TextPointPtr pt;
+	CComPtr<EnvDTE::TextPoint> pt;
 	HRESULT hr = pElement->get_EndPoint(&pt);
 	if (FAILED(hr))
 	{
@@ -40,7 +40,7 @@ HRESULT VSElement::GetEndPoint(EnvDTE::EditPoint** ppEditPoint)
 HRESULT VSElement::GetStartPoint(EnvDTE::EditPoint** ppEditPoint)
 {
 	ATLASSERT(pElement != NULL);
-	EnvDTE::TextPointPtr pt;
+	CComPtr<EnvDTE::TextPoint> pt;
 
 	HRESULT hr = pElement->get_StartPoint(&pt);
 	if (FAILED(hr) || (pt == NULL))
@@ -70,12 +70,15 @@ VSBase::~VSBase()
 
 bool VSBase::RetrieveTemplateParameters()
 {
+	HRESULT hr = E_FAIL;
 	TemplateParameters.RemoveAll();
-	VCCodeModelLibrary::VCCodeBasePtr pBase = pElement;
+	CComPtr<VCCodeModelLibrary::VCCodeBase> pBase;
+	hr = pElement->QueryInterface(&pBase);
 	ATLASSERT(pBase != NULL);
 	if (pBase == NULL)
 		return false;
-	_bstr_t DeclText = pBase->DeclarationText;
+	CComBSTR DeclText; 
+	hr = pBase->get_DeclarationText(&DeclText);
 	CString FullName = DeclText;
 	int TemlPos = FullName.Find(_T('<'));
 	if (TemlPos == -1)
@@ -128,10 +131,12 @@ bool VSBase::RetrieveTemplateParameters()
 //////////////////////////////////////////////////////////////////////////
 // VSClass
 
-CString VSClass::GetDialogID(EnvDTE::CodeElementPtr pElem)
+CString VSClass::GetDialogID(EnvDTE::CodeElement * pElem)
 {
+	HRESULT hr = E_FAIL;
 	_bstr_t ElemName;
-	VCCodeModelLibrary::VCCodeClassPtr pClass = pElem;
+	CComPtr<VCCodeModelLibrary::VCCodeClass> pClass;
+	hr = pElem->QueryInterface(&pClass);
 	ATLASSERT(pClass != NULL);
 	pClass->get_Name(ElemName.GetAddress());
 
@@ -141,7 +146,7 @@ CString VSClass::GetDialogID(EnvDTE::CodeElementPtr pElem)
 			return CString();
 	}
 
-	EnvDTE::CodeElementsPtr pEnums;
+	CComPtr<EnvDTE::CodeElements> pEnums;
 	pClass->get_Enums(&pEnums);
 	if (pEnums)
 	{		
@@ -149,19 +154,20 @@ CString VSClass::GetDialogID(EnvDTE::CodeElementPtr pElem)
 		pEnums->get_Count(&Count);
 		for (long i = 1; i <= Count; i++)
 		{
-			EnvDTE::CodeElementPtr pEnumElem;
+			CComPtr<EnvDTE::CodeElement> pEnumElem;
 			pEnums->Item(_variant_t(i), &pEnumElem);
 			ATLASSERT(pEnumElem != NULL);
-			VCCodeModelLibrary::VCCodeEnumPtr pEnum = pEnumElem;
+			CComPtr<VCCodeModelLibrary::VCCodeEnum> pEnum;
+			hr = pEnumElem->QueryInterface(&pEnum);
 			ATLASSERT(pEnum != NULL);
-			EnvDTE::CodeElementsPtr pMembers;
+			CComPtr<EnvDTE::CodeElements> pMembers;
 			pEnum->get_Members(&pMembers);
 			if (pMembers == NULL)
 				continue;
-			EnvDTE::CodeElementPtr pMemberElem;
-			EnvDTE::CodeVariablePtr pMemberVar;
+			CComPtr<EnvDTE::CodeElement> pMemberElem;
+			CComPtr<EnvDTE::CodeVariable> pMemberVar;
 			pMembers->Item(_variant_t(L"IDD"), &pMemberElem);
-			pMemberVar = pMemberElem;
+			hr = pMemberElem->QueryInterface(&pMemberVar);
 			if (pMemberVar != NULL)
 			{
 				_variant_t vtValue;
@@ -172,23 +178,27 @@ CString VSClass::GetDialogID(EnvDTE::CodeElementPtr pElem)
 		}
 	}
 	//не нашли в этом классе. поищем в предках
-	EnvDTE::CodeElementsPtr pBases;
+	CComPtr<EnvDTE::CodeElements> pBases;
 	pClass->get_Bases(&pBases);
 	long BaseCount;
 	pBases->get_Count(&BaseCount);
 	for (long i1 = 1; i1 <= BaseCount; i1++)
 	{
-		EnvDTE::CodeElementPtr pBaseElem;
+		CComPtr<EnvDTE::CodeElement> pBaseElem;
 		pBases->Item(_variant_t(i1), &pBaseElem);
 		if (pBaseElem != NULL)
 		{
-			VCCodeModelLibrary::VCCodeBasePtr pBase = pBaseElem;
+			CComPtr<VCCodeModelLibrary::VCCodeBase> pBase;
+			hr = pBaseElem->QueryInterface(&pBase);
 			if (pBase != NULL)
 			{
-				EnvDTE::CodeTypePtr pType = pBase->Class;
+				CComPtr<EnvDTE::CodeType> pType;
+				hr = pBase->get_Class(&pType);
 				if(pType != NULL)
 				{
-					VCCodeModelLibrary::VCCodeClassPtr pBaseClass = pType;
+					// CComPtr<VCCodeModelLibrary::VCCodeClass> pBaseClass;
+					CComPtr<EnvDTE::CodeElement> pBaseClass;
+					hr = pType->QueryInterface(&pBaseClass);
 					if (pBaseClass != NULL)
 					{
 						CString id = GetDialogID(pBaseClass);
@@ -205,6 +215,7 @@ CString VSClass::GetDialogID(EnvDTE::CodeElementPtr pElem)
 
 bool VSClass::FindPlaceForNewVar(_variant_t& Pos, EnvDTE::vsCMAccess NeededAccess)
 {
+	HRESULT hr = E_FAIL;
 	VSVariable* pLastVar = NULL;
 	for (size_t i = 0; i < Variables.GetCount(); i++)
 	{
@@ -212,7 +223,8 @@ bool VSClass::FindPlaceForNewVar(_variant_t& Pos, EnvDTE::vsCMAccess NeededAcces
 		if (pVar->pElement)
 		{
 			//уже реально существующий элемент
-			VCCodeModelLibrary::VCCodeVariablePtr pVCVar = pVar->pElement;
+			CComPtr<VCCodeModelLibrary::VCCodeVariable> pVCVar;
+			hr = pVar->pElement->QueryInterface(&pVCVar);
 			EnvDTE::vsCMAccess Access;
 			pVCVar->get_Access(&Access);
 			if (Access == NeededAccess)
@@ -233,16 +245,18 @@ bool VSClass::FindPlaceForNewVar(_variant_t& Pos, EnvDTE::vsCMAccess NeededAcces
 	}
 }
 
-EnvDTE::EditPointPtr VSClass::FindLastPublicElement()
+CComPtr<EnvDTE::EditPoint> VSClass::FindLastPublicElement()
 {
+	HRESULT hr = E_FAIL;
 	//ищем последний public элемент
 	VSElement* pLastElem = NULL;
 	VSFunction* pLastFunc = NULL;
 	VSVariable* pLastVar = NULL;
-	EnvDTE::EditPointPtr pLastPoint;
+	CComPtr<EnvDTE::EditPoint> pLastPoint;
 	for (size_t i1 = 0; i1 < Functions.GetCount(); i1++)
 	{
-		EnvDTE::CodeFunctionPtr pFunc = Functions[i1]->pElement;
+		CComPtr<EnvDTE::CodeFunction> pFunc; 
+		hr = Functions[i1]->pElement->QueryInterface(&pFunc);
 		if (pFunc == NULL)
 		{
 			continue;
@@ -258,9 +272,10 @@ EnvDTE::EditPointPtr VSClass::FindLastPublicElement()
 	}
 	if (pLastElem)
 	{
-		VCCodeModelLibrary::VCCodeFunctionPtr pFunc = pLastElem->pElement;
-		EnvDTE::TextPointPtr pTextPoint;
-		HRESULT hr = pFunc->get_EndPointOf(EnvDTE::vsCMPartHeader, VCCodeModelLibrary::vsCMWhereDeclaration, &pTextPoint);
+		CComPtr<VCCodeModelLibrary::VCCodeFunction> pFunc; 
+		hr = pLastElem->pElement->QueryInterface(&pFunc);
+		CComPtr<EnvDTE::TextPoint> pTextPoint;
+		hr = pFunc->get_EndPointOf(EnvDTE::vsCMPartHeader, VCCodeModelLibrary::vsCMWhereDeclaration, &pTextPoint);
 		if (FAILED(hr))
 		{
 			return NULL;
@@ -272,7 +287,8 @@ EnvDTE::EditPointPtr VSClass::FindLastPublicElement()
 
 	for (size_t i2 = 0; i2 < Variables.GetCount(); i2++)
 	{
-		EnvDTE::CodeVariablePtr pVar = Variables[i2]->pElement;
+		CComPtr<EnvDTE::CodeVariable> pVar; 
+		hr = Variables[i2]->pElement->QueryInterface(&pVar);
 		if (pVar == NULL)
 		{
 			continue;
@@ -299,13 +315,14 @@ EnvDTE::EditPointPtr VSClass::FindLastPublicElement()
 	if (!pLastVar && !pLastFunc)
 	{
 		//нет ни фукнций ни переменных
-		VCCodeModelLibrary::VCCodeClassPtr pCurClass = pElement;
+		CComPtr<VCCodeModelLibrary::VCCodeClass> pCurClass;
+		hr = pElement->QueryInterface(&pCurClass);
 		if (pCurClass == NULL)
 		{
 			return NULL;
 		}
 
-		EnvDTE::TextPointPtr pTextPoint = NULL;
+		CComPtr<EnvDTE::TextPoint> pTextPoint = NULL;
 		if (FAILED(pCurClass->get_StartPointOf(EnvDTE::vsCMPartBody, VCCodeModelLibrary::vsCMWhereDefault, &pTextPoint)) || (pTextPoint == NULL))
 		{
 			return NULL;	
@@ -320,7 +337,7 @@ EnvDTE::EditPointPtr VSClass::FindLastPublicElement()
 	if (pLastFunc && pLastVar)
 	{
 		//есть и функции и переменные
-		EnvDTE::EditPointPtr pText1, pText2;
+		CComPtr<EnvDTE::EditPoint> pText1, pText2;
 		pLastFunc->GetEndPoint(&pText1);
 		pLastVar->GetEndPoint(&pText2);
 
@@ -359,7 +376,7 @@ bool VSClass::FindPlaceForNewMap(EnvDTE::EditPoint** ppEditPoint)
 	{
 		for (int i1 = (int)Maps.GetCount() - 1; i1 >=0; i1--)
 		{
-			EnvDTE::EditPointPtr pStartPoint = NULL;
+			CComPtr<EnvDTE::EditPoint> pStartPoint = NULL;
 			VSMap* pMap = Maps[i1];
 			if (pMap->IsSelf())
 			{
@@ -384,11 +401,12 @@ bool VSClass::FindPlaceForNewMap(EnvDTE::EditPoint** ppEditPoint)
 
 bool VSClass::FindPlaceForNewMessageMap(EnvDTE::EditPoint** ppEditPoint, VSMessageMap* pMap)
 {
+	HRESULT hr = E_FAIL;
 	if (Maps.GetCount())
 	{
 		for (int i1 = (int)Maps.GetCount() - 1; i1 >=0; i1--)
 		{
-			EnvDTE::EditPointPtr pStartPoint = NULL;
+			CComPtr<EnvDTE::EditPoint> pStartPoint = NULL;
 			VSMap* pMap = Maps[i1];
 			if (pMap->IsSelf())
 			{
@@ -402,14 +420,15 @@ bool VSClass::FindPlaceForNewMessageMap(EnvDTE::EditPoint** ppEditPoint, VSMessa
 		}
 	}
 
-	EnvDTE::TextPointPtr pLastElem = NULL;
+	CComPtr<EnvDTE::TextPoint> pLastElem = NULL;
 	for (size_t i = 0; i != pMap->MapEntries.GetCount(); i++)
 	{
 		VSFunction* pFunction = (VSFunction*)(pMap->MapEntries[i])->pData;
 		if (pFunction && pFunction->pElement != NULL)
 		{
-			VCCodeModelLibrary::VCCodeFunctionPtr pFunc = pFunction->pElement;
-			EnvDTE::TextPointPtr pTextPoint;
+			CComPtr<VCCodeModelLibrary::VCCodeFunction> pFunc;
+			hr = pFunction->pElement->QueryInterface(&pFunc);
+			CComPtr<EnvDTE::TextPoint> pTextPoint;
 			HRESULT hr = pFunc->get_StartPointOf(EnvDTE::vsCMPartHeader, VCCodeModelLibrary::vsCMWhereDeclaration, &pTextPoint);
 			if (FAILED(hr))
 			{
@@ -438,8 +457,9 @@ bool VSClass::FindPlaceForNewMessageMap(EnvDTE::EditPoint** ppEditPoint, VSMessa
 			VSFunction* pFunction = (VSFunction*)(pAltMap->MapEntries[i])->pData;
 			if (pFunction && pFunction->pElement != NULL)
 			{
-				VCCodeModelLibrary::VCCodeFunctionPtr pFunc = pFunction->pElement;
-				EnvDTE::TextPointPtr pTextPoint;
+				CComPtr<VCCodeModelLibrary::VCCodeFunction> pFunc;
+				hr = pFunction->pElement->QueryInterface(&pFunc);
+				CComPtr<EnvDTE::TextPoint> pTextPoint;
 				HRESULT hr = pFunc->get_StartPointOf(EnvDTE::vsCMPartHeader, VCCodeModelLibrary::vsCMWhereDeclaration, &pTextPoint);
 				if (FAILED(hr))
 				{
@@ -479,11 +499,13 @@ bool VSClass::FindPlaceForNewMessageMap(EnvDTE::EditPoint** ppEditPoint, VSMessa
 
 bool VSClass::IsDialog()
 {
+	HRESULT hr = E_FAIL;
 	if (m_eDialog != eUnknown)
 	{
 		return (m_eDialog == eTrue) ? true : false;
 	}
-	EnvDTE::CodeClassPtr pMyClass = pElement;
+	CComPtr<EnvDTE::CodeClass> pMyClass; 
+	hr = pElement->QueryInterface(&pMyClass);
 	ATLASSERT(pMyClass != NULL);
 	VARIANT_BOOL bDerived = VARIANT_FALSE;
 	
@@ -518,12 +540,13 @@ bool VSClass::IsDialog()
 	//класс - диалог
 	m_eDialog = eTrue;
 	//ищем идентификатор IDD
-	EnvDTE::CodeElementPtr pelem = pElement;
+	CComPtr<EnvDTE::CodeElement> pelem; 
+	hr = pElement->QueryInterface(&pelem);
 	m_DialogID = GetDialogID(pelem);
 	return true;
 }
 
-HRESULT VSClass::AddElement(EnvDTE::CodeElementPtr pElem)
+HRESULT VSClass::AddElement(CComPtr<EnvDTE::CodeElement> pElem)
 {
 	EnvDTE::vsCMElement type;
 	pElem->get_Kind(&type);
@@ -566,7 +589,7 @@ HRESULT VSClass::AddElement(EnvDTE::CodeElementPtr pElem)
 			}
 			/*if (NewFunction->Name == _T("DECLARE_FRAME_WND_CLASS_EX"))
 			{
-				VCCodeModelLibrary::VCCodeFunctionPtr pVCFunc = pElem;
+				CComPtr<VCCodeModelLibrary::VCCodeFunction> pVCFunc = pElem;
 				if (pVCFunc != NULL)
 				{
 					_bstr_t bsStr;
@@ -581,7 +604,7 @@ HRESULT VSClass::AddElement(EnvDTE::CodeElementPtr pElem)
 				//find another map
 				CString MapName = NewFunction->Name.Mid(6, EndMap - 6);
 				CString MapPostfix = NewFunction->Name.Mid(EndMap + 4);
-				EnvDTE::EditPointPtr pEdit1;
+				CComPtr<EnvDTE::EditPoint> pEdit1;
 				NewFunction->GetStartPoint(&pEdit1);
 				delete NewFunction;
 				VSMap* pNewMap;
@@ -678,21 +701,23 @@ HRESULT VSClass::InsertFunction(VSFunction* pFunc, CString Comment,
 								EnvDTE::vsCMFunction FuncType/* = EnvDTE::vsCMFunctionFunction */,
 								_variant_t Position /*= _variant_t(VCCodeModelLibrary::vsCMAddPositionEnd)*/)
 {
-	VCCodeModelLibrary::VCCodeClassPtr pClass = pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeClass> pClass; 
+	hr = pElement->QueryInterface(&pClass);
 	if (pClass == NULL)
 	{
 		return S_FALSE;
 	}
 
-	EnvDTE::CodeTypeRefPtr pTypeRef;
+	CComPtr<EnvDTE::CodeTypeRef> pTypeRef;
 	if (FAILED(pCodeModel->CreateCodeTypeRef(_variant_t(_bstr_t(pFunc->Type)), &pTypeRef)) || (pTypeRef == NULL))
 	{
 		return S_FALSE;
 	}
 	
 	_variant_t vtType = ((LPDISPATCH)pTypeRef);
-	EnvDTE::CodeFunctionPtr pNewFunc = NULL;
-	EnvDTE::ProjectItemPtr pItem;
+	CComPtr<EnvDTE::CodeFunction> pNewFunc = NULL;
+	CComPtr<EnvDTE::ProjectItem> pItem;
 	_bstr_t ClassFile;
 
 	pClass->get_ProjectItem(&pItem);
@@ -750,7 +775,7 @@ HRESULT VSClass::InsertFunction(VSFunction* pFunc, CString Comment,
 	}
 	EnvDTE::vsCMAccess FuncAccess = EnvDTE::vsCMAccessDefault;
 
-	HRESULT hr = pClass->raw_AddFunction(FName, FuncType, vtType, Position, FuncAccess, vtLocation, &pNewFunc);
+	hr = pClass->AddFunction(FName, FuncType, vtType, Position, FuncAccess, vtLocation, &pNewFunc);
 	if (pNewFunc == NULL)
 	{
 		CString Str = _T("Cannot add function ") + StrName;
@@ -766,7 +791,8 @@ HRESULT VSClass::InsertFunction(VSFunction* pFunc, CString Comment,
 	pFunc->pElement = pNewFunc;
 	
 		
-	VCCodeModelLibrary::VCCodeFunctionPtr pVCFunc = pNewFunc;
+	CComPtr<VCCodeModelLibrary::VCCodeFunction> pVCFunc; 
+	hr = pNewFunc->QueryInterface(&pVCFunc);
 	if (pVCFunc == NULL)
 	{
 		return S_FALSE;
@@ -809,21 +835,23 @@ HRESULT VSClass::InsertFunction(VSFunction* pFunc, CString Comment,
 
 HRESULT VSClass::InsertVariable(VSVariable* pVar)
 {
-	VCCodeModelLibrary::VCCodeClassPtr pClass = pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeClass> pClass;
+	hr = pElement->QueryInterface(&pClass);
 	if (pClass == NULL)
 	{
 		return E_FAIL;
 	}
 
-	EnvDTE::CodeTypeRefPtr pTypeRef;
+	CComPtr<EnvDTE::CodeTypeRef> pTypeRef;
 	if (FAILED(pCodeModel->CreateCodeTypeRef(_variant_t(_bstr_t(pVar->Type)), &pTypeRef)) || (pTypeRef == NULL))
 	{
 		return E_FAIL;
 	}
 
 	_variant_t vtType = ((LPDISPATCH)pTypeRef);
-	EnvDTE::CodeVariablePtr pNewVar = NULL;
-	EnvDTE::ProjectItemPtr pItem;
+	CComPtr<EnvDTE::CodeVariable> pNewVar = NULL;
+	CComPtr<EnvDTE::ProjectItem> pItem;
 	_bstr_t ClassFile;
 
 	pClass->get_ProjectItem(&pItem);
@@ -858,7 +886,7 @@ HRESULT VSClass::InsertVariable(VSVariable* pVar)
 	{
 		vtLocation.Clear();
 	}
-	HRESULT hr = pClass->raw_AddVariable(FName, vtType, vtPos, Access, vtLocation, &pNewVar);
+	hr = pClass->AddVariable(FName, vtType, vtPos, Access, vtLocation, &pNewVar);
 	if (pNewVar == NULL)
 	{
 		CString Str = _T("Cannot add variable ") + StrName;
@@ -867,7 +895,8 @@ HRESULT VSClass::InsertVariable(VSVariable* pVar)
 	}
 	pVar->pParent = (VSElement*)this;
 	pVar->pElement = pNewVar;
-	VCCodeModelLibrary::VCCodeVariablePtr pVCVar = pNewVar;
+	CComPtr<VCCodeModelLibrary::VCCodeVariable> pVCVar;
+	hr = pNewVar->QueryInterface(&pVCVar);
 	if (pVCVar == NULL)
 	{
 		return S_OK;
@@ -896,7 +925,7 @@ HRESULT VSClass::InsertVariable(VSVariable* pVar)
 
 HRESULT VSClass::InsertMap(VSMap* pMap)
 {
-	EnvDTE::EditPointPtr pStartPoint;
+	CComPtr<EnvDTE::EditPoint> pStartPoint;
 	bool bAfter = true;
 	if (pMap->Name == _T("MSG"))
 	{
@@ -925,7 +954,7 @@ HRESULT VSClass::RetriveItems()
 		return S_OK;
 	m_bRetrieved = true;
 
-	EnvDTE::CodeElementsPtr pElements = NULL;
+	CComPtr<EnvDTE::CodeElements> pElements = NULL;
 	DeleteAllItems();
 
 	if (FAILED(pElement->get_Children(&pElements)) || (pElements == NULL))
@@ -939,7 +968,7 @@ HRESULT VSClass::RetriveItems()
 	for (long i = 1; i <= Count; i++)
 	{
 		_variant_t vt = i;
-		EnvDTE::CodeElementPtr pElem = NULL;
+		CComPtr<EnvDTE::CodeElement> pElem = NULL;
 		if (FAILED(pElements->Item(vt, &pElem)) || (pElem == NULL))
 		{
 			return E_FAIL;
@@ -1073,8 +1102,10 @@ void VSClass::DeleteAllItems()
 
 HRESULT VSClass::InsertBase(VSBase* pBase)
 {
+	HRESULT hr = E_FAIL;
 	_variant_t vt(pBase->Name);
-	EnvDTE::CodeClassPtr pClass = pElement;
+	CComPtr<EnvDTE::CodeClass> pClass;
+	hr = pElement->QueryInterface(&pClass);
 	ATLASSERT(pClass != NULL);
 	if (pClass == NULL)
 		return E_FAIL;
@@ -1094,7 +1125,9 @@ VSClass::~VSClass()
 
 HRESULT VSVariable::RetriveType()
 {
-	VCCodeModelLibrary::VCCodeVariablePtr pParam = pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeVariable> pParam;
+	hr = pElement->QueryInterface(&pParam);
 
 	if (pParam == NULL)
 	{
@@ -1110,7 +1143,9 @@ HRESULT VSVariable::RetriveType()
 
 HRESULT VSVariable::Remove()
 {
-	EnvDTE::CodeClassPtr pClass = pParent->pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::CodeClass> pClass;
+	hr = pParent->pElement->QueryInterface(&pClass);
 	if (pClass == NULL)
 	{
 		return S_FALSE;
@@ -1127,7 +1162,9 @@ HRESULT VSVariable::Remove()
 
 HRESULT VSParameter::RetriveType()
 {
-	VCCodeModelLibrary::VCCodeParameterPtr pParam = pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeParameter> pParam;
+	hr = pElement->QueryInterface(&pParam);
 
 	if (pParam == NULL)
 	{
@@ -1147,7 +1184,7 @@ HRESULT VSParameter::RetriveType()
 /*HRESULT VSParameter::RetriveName()
 {
 	_bstr_t str;
-	VCCodeModelLibrary::VCCodeParameterPtr pParam = pElement;
+	CComPtr<VCCodeModelLibrary::VCCodeParameter> pParam = pElement;
 	HRESULT hRes = pParam->get_DisplayName(str.GetAddress());
 	if (FAILED(hRes))
 	{
@@ -1176,7 +1213,9 @@ VSFunction::VSFunction(VSFunction& Func):VSElement(EnvDTE::vsCMElementFunction)
 
 HRESULT VSFunction::RetriveType()
 {
-	VCCodeModelLibrary::VCCodeFunctionPtr pFunc = pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeFunction> pFunc;
+	hr = pElement->QueryInterface(&pFunc);
 	ATLASSERT(pFunc != NULL);
 	_bstr_t s1;
 	pFunc->get_TypeString(s1.GetAddress());
@@ -1190,7 +1229,9 @@ HRESULT VSFunction::RetriveType()
 
 HRESULT VSFunction::RetrieveAccess()
 {
-	VCCodeModelLibrary::VCCodeFunctionPtr pVCFunc = pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<VCCodeModelLibrary::VCCodeFunction> pVCFunc;
+	hr = pElement->QueryInterface(&pVCFunc);
 	ATLASSERT(pVCFunc != NULL);
 
 	return pVCFunc->get_Access(&Access);
@@ -1198,7 +1239,7 @@ HRESULT VSFunction::RetrieveAccess()
 
 HRESULT VSFunction::RetriveParameters()
 {
-	EnvDTE::CodeElementsPtr pElements = NULL;
+	CComPtr<EnvDTE::CodeElements> pElements = NULL;
 
 	DeleteAllItems();
 
@@ -1213,7 +1254,7 @@ HRESULT VSFunction::RetriveParameters()
 	for (long i = 1; i <= Count; i++)
 	{
 		_variant_t vt = i;
-		EnvDTE::CodeElementPtr pElem = NULL;
+		CComPtr<EnvDTE::CodeElement> pElem = NULL;
 		if (FAILED(pElements->Item(vt, &pElem)) || (pElem == NULL))
 		{
 			return E_FAIL;
@@ -1240,7 +1281,9 @@ HRESULT VSFunction::RetriveParameters()
 
 HRESULT VSFunction::Remove()
 {
-	EnvDTE::CodeClassPtr pClass = pParent->pElement;
+	HRESULT hr = E_FAIL;
+	CComPtr<EnvDTE::CodeClass> pClass;
+	hr = pParent->pElement->QueryInterface(&pClass);
 	if (pClass == NULL)
 	{
 		return E_FAIL;
@@ -1323,7 +1366,7 @@ HRESULT VSMap::RetriveMapEntries()
 {
 	DeleteAllItems();
 	
-	EnvDTE::EditPointPtr pEdit1 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEdit1 = NULL;
 	_bstr_t str;
 	_variant_t vt;
 	
@@ -1403,12 +1446,12 @@ HRESULT VSMap::RetriveMapEntries()
 
 		pEdit1->CharRight(trimleftcount);
 
-		EnvDTE::EditPointPtr pStart = NULL;
+		CComPtr<EnvDTE::EditPoint> pStart = NULL;
 		if (FAILED(pEdit1->CreateEditPoint(&pStart)))
 		{
 			return E_FAIL;
 		}
-		EnvDTE::EditPointPtr pEnd = NULL;
+		CComPtr<EnvDTE::EditPoint> pEnd = NULL;
 		if (FAILED(pEdit1->CreateEditPoint(&pEnd)))
 		{
 			return E_FAIL;
@@ -1522,7 +1565,7 @@ HRESULT VSMap::FindPlaceForNewItem(VSMapEntry* MapEntry, EnvDTE::EditPoint** ppS
 {
 	//////////////////////////////////////////////////////////////////////////
 	//поиск места для вставки
-	EnvDTE::EditPointPtr pEditPoint1 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint1 = NULL;
 	VSMapEntry* LastEntry = NULL;
 	*ppStartPoint = NULL;
 	if (MapEntries.GetCount())
@@ -1570,8 +1613,8 @@ HRESULT VSMap::InsertMapEntry(VSMapEntry* MapEntry)
 {
 	//ATLASSERT(pElement);
 
-	EnvDTE::EditPointPtr pEditPoint1 = NULL;
-	EnvDTE::EditPointPtr pEditPoint2 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint1 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint2 = NULL;
 	_bstr_t s2;
 
 	if (FAILED(FindPlaceForNewItem(MapEntry, &pEditPoint1)))
@@ -1617,7 +1660,7 @@ HRESULT VSMap::InsertMapEntry(VSMapEntry* MapEntry)
 	//поиск начальной и конечной точек для вставленной записи
 	pEditPoint2->StartOfLine();
 
-	EnvDTE::EditPointPtr p1, p2;
+	CComPtr<EnvDTE::EditPoint> p1, p2;
 	if (FAILED(pEditPoint2->CreateEditPoint(&p1)))
 	{
 		return E_FAIL;
@@ -1642,7 +1685,7 @@ HRESULT VSMap::InsertMapEntry(VSMapEntry* MapEntry)
 	return S_OK;
 }
 
-HRESULT VSMap::InsertNewMap(EnvDTE::EditPointPtr pInsertAfter, bool bAfter /* = true*/)
+HRESULT VSMap::InsertNewMap(CComPtr<EnvDTE::EditPoint> pInsertAfter, bool bAfter /* = true*/)
 {
 	_bstr_t s2;
 	if (bAfter)
@@ -1673,7 +1716,7 @@ HRESULT VSMap::InsertNewMap(EnvDTE::EditPointPtr pInsertAfter, bool bAfter /* = 
 		s2 += LPCTSTR(_T(")\r\nEND_") + Name + _T("_MAP") + Postfix + _T("()\r\n\r\n"));
 	}
 	
-	EnvDTE::EditPointPtr pEditPoint2 = NULL, pEditPoint1;
+	CComPtr<EnvDTE::EditPoint> pEditPoint2 = NULL, pEditPoint1;
 	
 	if (FAILED(pInsertAfter->CreateEditPoint(&pEditPoint1)))
 	{
@@ -1711,7 +1754,7 @@ HRESULT VSMap::InsertNewMap(EnvDTE::EditPointPtr pInsertAfter, bool bAfter /* = 
 
 HRESULT VSMap::Remove()
 {
-	EnvDTE::EditPointPtr pStart, pEnd;
+	CComPtr<EnvDTE::EditPoint> pStart, pEnd;
 	GetStartPoint(&pStart);
 	GetEndPoint(&pEnd);
 	HRESULT hRes = pStart->Delete(_variant_t((EnvDTE::EditPoint*)pEnd));
@@ -1779,8 +1822,8 @@ HRESULT VSMessageMap::ReFormatItems()
 
 HRESULT VSMessageMap::ReplacePrefixEnd()
 {
-	EnvDTE::EditPointPtr pEditPoint1 = NULL;
-	EnvDTE::EditPointPtr pEditPoint2 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint1 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint2 = NULL;
 	GetEndPoint(&pEditPoint1);
 	ATLASSERT(pEditPoint1 != NULL);
 	pEditPoint1->StartOfLine();
@@ -1803,8 +1846,8 @@ HRESULT VSMessageMap::ReplacePrefixEnd()
 
 HRESULT VSMessageMap::InsertAltMap(VSMessageMap* pAltMap)
 {
-	EnvDTE::EditPointPtr pEditPoint1 = NULL;
-	EnvDTE::EditPointPtr pEditPoint2 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint1 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint2 = NULL;
 	_bstr_t s2;
 
 	GetEndPoint(&pEditPoint1);
@@ -1840,7 +1883,7 @@ HRESULT VSMessageMap::InsertAltMap(VSMessageMap* pAltMap)
 	//поиск начальной и конечной точек для вставленной записи
 	pEditPoint2->StartOfLine();
 		
-	EnvDTE::EditPointPtr p1, p2;
+	CComPtr<EnvDTE::EditPoint> p1, p2;
 	if (FAILED(pEditPoint2->CreateEditPoint(&p1)))
 	{
 		return E_FAIL;
@@ -1860,7 +1903,7 @@ HRESULT VSMessageMap::InsertAltMap(VSMessageMap* pAltMap)
 			pCurMap = AltMaps[i];
 		}
 	}
-	EnvDTE::EditPointPtr pOldEnd = pCurMap->m_pEndPoint;
+	CComPtr<EnvDTE::EditPoint> pOldEnd = pCurMap->m_pEndPoint;
 	pAltMap->m_pStartPoint = p1;
 	pAltMap->m_pEndPoint = pOldEnd;
 	pCurMap->m_pEndPoint = p2;
@@ -1984,7 +2027,7 @@ HRESULT VSMessageMap::FindPlaceForNewItem(VSMapEntry* MapEntry, EnvDTE::EditPoin
 	
 	//////////////////////////////////////////////////////////////////////////
 	//поиск места для вставки
-	EnvDTE::EditPointPtr pEditPoint1 = NULL;
+	CComPtr<EnvDTE::EditPoint> pEditPoint1;
 	VSMapEntry* LastEntry = NULL;
 	*ppStartPoint = NULL;
 	if (MapEntries.GetCount())
@@ -2022,7 +2065,7 @@ HRESULT VSMessageMap::FindPlaceForNewItem(VSMapEntry* MapEntry, EnvDTE::EditPoin
 		{
 			HRESULT hr = LastEntry->GetEndPoint(&pEditPoint1);
 			ATLASSERT(SUCCEEDED(hr));
-			if (FAILED(LastEntry->GetEndPoint(&pEditPoint1)))
+			if (FAILED(hr))
 			{
 				return E_FAIL;
 			}
@@ -2134,7 +2177,7 @@ HRESULT VSMessageMap::Remove()
 		//удаляем всю карту сообщений, а не ALT карту
 		return VSMap::Remove();
 	}
-	EnvDTE::EditPointPtr pStart, pEnd;
+	CComPtr<EnvDTE::EditPoint> pStart, pEnd;
 	GetEndPoint(&pEnd);
 	GetStartPoint(&pStart);
 	pEnd->StartOfLine();

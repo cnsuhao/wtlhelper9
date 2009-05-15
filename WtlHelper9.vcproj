@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="WtlHelper"
 	ProjectGUID="{36D49126-2EF6-439B-BF38-B01D5EDAB625}"
 	RootNamespace="WtlHelper"
 	Keyword="AtlProj"
+	TargetFrameworkVersion="0"
 	>
 	<Platforms>
 		<Platform
@@ -16,7 +17,7 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug2005|Win32"
+			Name="Debug2008|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
@@ -43,23 +44,23 @@
 				MkTypLibCompatible="false"
 				TargetEnvironment="1"
 				GenerateStublessProxies="true"
-				TypeLibraryName="$(IntDir)/AddIn8.tlb"
-				HeaderFileName="AddIn8.h"
+				TypeLibraryName="$(IntDir)/AddIn9.tlb"
+				HeaderFileName="AddIn9.h"
 				DLLDataFileName=""
-				InterfaceIdentifierFileName="AddIn8_i.c"
-				ProxyFileName="AddIn8_p.c"
+				InterfaceIdentifierFileName="AddIn9_i.c"
+				ProxyFileName="AddIn9_p.c"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL;DETECT_LEAKS;_IMAGEHLP64;_FOR_VS2005"
+				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL;DETECT_LEAKS;_IMAGEHLP64;_FOR_VS2008;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				SmallerTypeCheck="false"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -67,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG;_FOR_VS2005"
+				PreprocessorDefinitions="_DEBUG;_FOR_VS2008"
 				Culture="1033"
 				AdditionalIncludeDirectories="$(IntDir)"
 			/>
@@ -79,7 +80,7 @@
 				RegisterOutput="true"
 				IgnoreImportLibrary="true"
 				AdditionalDependencies="msi.lib"
-				OutputFile="$(OutDir)/$(ProjectName)8.dll"
+				OutputFile="$(OutDir)/$(ProjectName)9.dll"
 				LinkIncremental="2"
 				ModuleDefinitionFile=".\AddIn.def"
 				DelayLoadDLLs="uxtheme.dll"
@@ -109,16 +110,12 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
-				Description=""
 				CommandLine=""
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release2005|Win32"
+			Name="Release2008|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
@@ -146,11 +143,11 @@
 				MkTypLibCompatible="false"
 				TargetEnvironment="1"
 				GenerateStublessProxies="true"
-				TypeLibraryName="$(IntDir)/AddIn8.tlb"
-				HeaderFileName="AddIn8.h"
+				TypeLibraryName="$(IntDir)/AddIn9.tlb"
+				HeaderFileName="AddIn9.h"
 				DLLDataFileName=""
-				InterfaceIdentifierFileName="AddIn8_i.c"
-				ProxyFileName="AddIn8_p.c"
+				InterfaceIdentifierFileName="AddIn9_i.c"
+				ProxyFileName="AddIn9_p.c"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -158,7 +155,7 @@
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="2"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL;_FOR_VS2005"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_FOR_VS2008"
 				StringPooling="true"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
@@ -168,7 +165,7 @@
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -176,7 +173,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG;_FOR_VS2005"
+				PreprocessorDefinitions="NDEBUG;_FOR_VS2008"
 				Culture="1033"
 				AdditionalIncludeDirectories="$(IntDir)"
 			/>
@@ -188,7 +185,7 @@
 				RegisterOutput="true"
 				IgnoreImportLibrary="true"
 				AdditionalDependencies="msi.lib"
-				OutputFile="$(OutDir)/$(ProjectName)8.dll"
+				OutputFile="$(OutDir)/$(ProjectName)9.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				ModuleDefinitionFile=".\AddIn.def"
@@ -220,11 +217,7 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
-				Description=""
 				CommandLine=""
 			/>
 		</Configuration>
@@ -269,7 +262,7 @@
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="2"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL;_FOR_VS2005"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL;_CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;_FOR_VS2008"
 				StringPooling="true"
 				MinimalRebuild="true"
 				RuntimeLibrary="0"
@@ -277,7 +270,7 @@
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -285,7 +278,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;_FOR_VS2008"
 				Culture="1033"
 				AdditionalIncludeDirectories="$(IntDir)"
 			/>
@@ -297,7 +290,7 @@
 				RegisterOutput="true"
 				IgnoreImportLibrary="true"
 				AdditionalDependencies="msi.lib"
-				OutputFile="$(OutDir)/$(ProjectName)8.dll"
+				OutputFile="$(OutDir)/$(ProjectName)9.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				ModuleDefinitionFile=".\AddIn.def"
@@ -328,11 +321,7 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
-				Description=""
 				CommandLine=""
 			/>
 		</Configuration>
@@ -353,10 +342,10 @@
 				>
 			</File>
 			<File
-				RelativePath=".\AddIn8.idl"
+				RelativePath=".\AddIn9.idl"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCMIDLTool"
@@ -364,14 +353,14 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release2005|Win32"
+					Name="Release2008|Win32"
 					>
 					<Tool
 						Name="VCMIDLTool"
 						TypeLibraryName="$(IntDir)/AddIn.tlb"
-						HeaderFileName="AddIn8.h"
-						InterfaceIdentifierFileName="AddIn8_i.c"
-						ProxyFileName="AddIn8_p.c"
+						HeaderFileName="AddIn9.h"
+						InterfaceIdentifierFileName="AddIn9_i.c"
+						ProxyFileName="AddIn9_p.c"
 					/>
 				</FileConfiguration>
 			</File>
@@ -423,7 +412,7 @@
 				RelativePath="stdafx.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -431,7 +420,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release2005|Win32"
+					Name="Release2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -479,7 +468,7 @@
 				RelativePath=".\tracealloc.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -487,7 +476,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release2005|Win32"
+					Name="Release2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -642,6 +631,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\addin9.rgs"
+				>
+			</File>
+			<File
+				RelativePath=".\res\addin9.rgs"
+				>
+			</File>
+			<File
 				RelativePath=".\res\closefld.ico"
 				>
 			</File>
@@ -713,7 +710,7 @@
 				RelativePath=".\Dialog\AddAltMapDlg.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -721,7 +718,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Release2005|Win32"
+					Name="Release2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -769,7 +766,7 @@
 				RelativePath=".\Dialog\AddMemberVar.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -793,7 +790,7 @@
 				RelativePath=".\Dialog\AddMemberVarGL.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -861,7 +858,7 @@
 				RelativePath=".\Dialog\FunctionPage.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -885,7 +882,7 @@
 				RelativePath=".\Dialog\GeneralPage.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -913,7 +910,7 @@
 				RelativePath=".\Dialog\HandlerIDDlg.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -961,7 +958,7 @@
 				RelativePath=".\Dialog\VariablePage.cpp"
 				>
 				<FileConfiguration
-					Name="Debug2005|Win32"
+					Name="Debug2008|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"

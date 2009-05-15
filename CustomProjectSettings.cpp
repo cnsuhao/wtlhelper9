@@ -11,10 +11,10 @@ CCustomProjectSettings::~CCustomProjectSettings(void)
 {
 }
 
-EnvDTE::GlobalsPtr CCustomProjectSettings::GetSolutionGlobals()
+CComPtr<EnvDTE::Globals> CCustomProjectSettings::GetSolutionGlobals()
 {
-	EnvDTE::GlobalsPtr pGlobals;
-	EnvDTE::_SolutionPtr pActiveSolution;
+	CComPtr<EnvDTE::Globals> pGlobals;
+	CComPtr<EnvDTE::_Solution> pActiveSolution;
 	m_pDte->get_Solution(&pActiveSolution);
 	if(pActiveSolution != NULL)
 	{
@@ -28,16 +28,16 @@ EnvDTE::GlobalsPtr CCustomProjectSettings::GetSolutionGlobals()
 	return pGlobals;
 }
 
-EnvDTE::GlobalsPtr CCustomProjectSettings::GetProjectGlobals(EnvDTE::ProjectPtr pProject)
+CComPtr<EnvDTE::Globals> CCustomProjectSettings::GetProjectGlobals(CComPtr<EnvDTE::Project> pProject)
 {
-	EnvDTE::GlobalsPtr pGlobals;
+	CComPtr<EnvDTE::Globals> pGlobals;
 	pProject->get_Globals(&pGlobals);
 
 	return pGlobals;
 }
 
 bool CCustomProjectSettings::GetGlobalsValue(
-	EnvDTE::GlobalsPtr pGlobals, IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue)
+	CComPtr<EnvDTE::Globals> pGlobals, IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue)
 {
 	bool Result = false;
 	if(pGlobals != NULL)
@@ -55,7 +55,7 @@ bool CCustomProjectSettings::GetGlobalsValue(
 }
 
 bool CCustomProjectSettings::SetGlobalsValue(
-	EnvDTE::GlobalsPtr pGlobals, IN LPCTSTR lpszVariableName, IN _variant_t& vtValue)
+	CComPtr<EnvDTE::Globals> pGlobals, IN LPCTSTR lpszVariableName, IN _variant_t& vtValue)
 {
 	bool Result = false;
 	if(pGlobals != NULL)
@@ -71,7 +71,7 @@ bool CCustomProjectSettings::SetGlobalsValue(
 }
 
 bool CCustomProjectSettings::DeleteGlobalsVariable(
-	EnvDTE::GlobalsPtr pGlobals, IN LPCTSTR lpszVariableName)
+	CComPtr<EnvDTE::Globals> pGlobals, IN LPCTSTR lpszVariableName)
 {
 	bool Result = false;
 	if(pGlobals != NULL)
@@ -93,40 +93,40 @@ bool CCustomProjectSettings::GetSolutionVariableValue(
 {
 	
 	vtValue.Clear();
-	EnvDTE::GlobalsPtr pGlobals = GetSolutionGlobals();
+	CComPtr<EnvDTE::Globals> pGlobals = GetSolutionGlobals();
 	return GetGlobalsValue(pGlobals, lpszVariableName, vtValue);
 }
 
 bool CCustomProjectSettings::SetSolutionVariableValue(
 	IN LPCTSTR lpszVariableName, IN _variant_t& vtValue)
 {
-	EnvDTE::GlobalsPtr pGlobals = GetSolutionGlobals();
+	CComPtr<EnvDTE::Globals> pGlobals = GetSolutionGlobals();
 	return SetGlobalsValue(pGlobals, lpszVariableName, vtValue);
 }
 
 bool CCustomProjectSettings::DeleteSolutionVariable(IN LPCTSTR lpszVariableName)
 {
-	EnvDTE::GlobalsPtr pGlobals = GetSolutionGlobals();
+	CComPtr<EnvDTE::Globals> pGlobals = GetSolutionGlobals();
 	return DeleteGlobalsVariable(pGlobals, lpszVariableName);
 }
 
 bool CCustomProjectSettings::GetProjectVariableValue(
-	IN EnvDTE::ProjectPtr pProject, IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue)
+	IN CComPtr<EnvDTE::Project> pProject, IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue)
 {
 	vtValue.Clear();
-	EnvDTE::GlobalsPtr pGlobals = GetProjectGlobals(pProject);
+	CComPtr<EnvDTE::Globals> pGlobals = GetProjectGlobals(pProject);
 	return GetGlobalsValue(pGlobals, lpszVariableName, vtValue);
 }
 
 bool CCustomProjectSettings::SetProjectVariableValue(
-	IN EnvDTE::ProjectPtr pProject, IN LPCTSTR lpszVariableName, IN _variant_t& vtValue)
+	IN CComPtr<EnvDTE::Project> pProject, IN LPCTSTR lpszVariableName, IN _variant_t& vtValue)
 {
-	EnvDTE::GlobalsPtr pGlobals = GetProjectGlobals(pProject);
+	CComPtr<EnvDTE::Globals> pGlobals = GetProjectGlobals(pProject);
 	return SetGlobalsValue(pGlobals, lpszVariableName, vtValue);
 }
 
-bool CCustomProjectSettings::DeleteProjectVariable(IN EnvDTE::ProjectPtr pProject, IN LPCTSTR lpszVariableName)
+bool CCustomProjectSettings::DeleteProjectVariable(IN CComPtr<EnvDTE::Project> pProject, IN LPCTSTR lpszVariableName)
 {
-	EnvDTE::GlobalsPtr pGlobals = GetProjectGlobals(pProject);
+	CComPtr<EnvDTE::Globals> pGlobals = GetProjectGlobals(pProject);
 	return DeleteGlobalsVariable(pGlobals, lpszVariableName);
 }

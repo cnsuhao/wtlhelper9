@@ -26,9 +26,12 @@
 #include "Settings.h"
 #include "Dialog/HandlerIDDlg.h"
 
+struct VSClass; 
+
 class CMessageManager : public CSettings<CMessageManager>
 {
-	VSClass* m_pClass;
+public: 
+	struct VSClass * m_pClass;
 	HWND m_hParentWnd;
 	InsDelPoints* m_pModifications;
 	const CResourceManager* m_pResManager;

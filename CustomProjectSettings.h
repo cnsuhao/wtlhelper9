@@ -3,12 +3,12 @@
 
 class CCustomProjectSettings
 {
-	EnvDTE::_DTEPtr m_pDte;
-	EnvDTE::GlobalsPtr GetSolutionGlobals();
-	EnvDTE::GlobalsPtr GetProjectGlobals(EnvDTE::ProjectPtr pProject);
-	bool GetGlobalsValue(EnvDTE::GlobalsPtr pGlobals, IN LPCTSTR lpszlpszVariableName, OUT _variant_t& vtValue);
-	bool SetGlobalsValue(EnvDTE::GlobalsPtr pGlobals, IN LPCTSTR lpszlpszVariableName, IN _variant_t& vtValue);
-	bool DeleteGlobalsVariable(EnvDTE::GlobalsPtr pGlobals, IN LPCTSTR lpszlpszVariableName);
+	CComPtr<EnvDTE::_DTE> m_pDte;
+	CComPtr<EnvDTE::Globals> GetSolutionGlobals();
+	CComPtr<EnvDTE::Globals> GetProjectGlobals(CComPtr<EnvDTE::Project> pProject);
+	bool GetGlobalsValue(CComPtr<EnvDTE::Globals> pGlobals, IN LPCTSTR lpszlpszVariableName, OUT _variant_t& vtValue);
+	bool SetGlobalsValue(CComPtr<EnvDTE::Globals> pGlobals, IN LPCTSTR lpszlpszVariableName, IN _variant_t& vtValue);
+	bool DeleteGlobalsVariable(CComPtr<EnvDTE::Globals> pGlobals, IN LPCTSTR lpszlpszVariableName);
 public:
 	CCustomProjectSettings(void);
 	~CCustomProjectSettings(void);
@@ -19,9 +19,9 @@ public:
 	bool SetSolutionVariableValue(IN LPCTSTR lpszVariableName, IN _variant_t& vtValue);
 	bool DeleteSolutionVariable(IN LPCTSTR lpszVariableName);
 
-	bool GetProjectVariableValue(IN EnvDTE::ProjectPtr pProject, IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue);
-	bool SetProjectVariableValue(IN EnvDTE::ProjectPtr pProject, IN LPCTSTR lpszVariableName, IN _variant_t& vtValue);
-	bool DeleteProjectVariable(IN EnvDTE::ProjectPtr pProject, IN LPCTSTR lpszVariableName);
+	bool GetProjectVariableValue(IN CComPtr<EnvDTE::Project> pProject, IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue);
+	bool SetProjectVariableValue(IN CComPtr<EnvDTE::Project> pProject, IN LPCTSTR lpszVariableName, IN _variant_t& vtValue);
+	bool DeleteProjectVariable(IN CComPtr<EnvDTE::Project> pProject, IN LPCTSTR lpszVariableName);
 	
 	static CCustomProjectSettings m_sCustomProperties;
 };

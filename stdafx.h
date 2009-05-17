@@ -153,7 +153,8 @@ enum eWTLVersion
 {
 	eWTL71 = 0,
 	eWTL75 = 1,
-	eWTL80 = 2
+	eWTL80 = 2,
+	eWTL81 = 3,
 };
 
 class CAddInModule : public CAtlDllModuleT< CAddInModule >,
@@ -241,5 +242,17 @@ extern CAddInModule _AtlModule;
 #endif
 
 #ifndef _countof
-#define _countof(_Array) sizeof(_Array) / sizeof(_Array[0])
+#define _countof(_Array) sizeof(_Array) / sizeof((_Array)[0])
 #endif
+
+#define STR_WTL_WIZARDS     _T("Software\\SaloS\\WTL Wizards")
+#define STR_WTL_HELPER_KEY  _T("Software\\SaloS\\WtlHelper")
+
+#define STR_WTL_HELPER_W    L"WTL Helper"
+#define STR_WTL_HELPER_A    "WTL Helper"
+#ifdef UNICODE
+#define STR_WTL_HELPER      STR_WTL_HELPER_W
+#else
+#define STR_WTL_HELPER      STR_WTL_HELPER_A
+#endif
+

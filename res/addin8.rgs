@@ -24,3 +24,34 @@ HKCR
 		}
 	}
 }
+
+HKLM
+{
+	NoRemove 'SOFTWARE'
+	{
+		NoRemove 'Microsoft'
+		{
+			NoRemove 'VisualStudio'
+			{
+				NoRemove '8.0'
+				{
+					NoRemove 'AddIns'
+					{
+						ForceRemove 'WtlHelper.Connect8'
+						{
+							val LoadBehavior = d 3
+							val CommandLineSafe = d 0
+							val CommandPreload = d 1
+							val FriendlyName = s 'WTL Helper'
+							val Description = s 'Class Wizard for WTL'
+							val AboutBoxDetails = s 'WTL Helper is powerful tool that helps using WTL.'
+							val AboutBoxIcon = s '%MODULE%,1'
+							val SatelliteDLLName = s 'WtlHelperRes.dll'
+							val SatelliteDLLPath = s '%ModulePath%'
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -14,6 +14,7 @@ public:
 	~CCustomProjectSettings(void);
 
 	void Init(EnvDTE::_DTE* dte);
+	void Clearup(void);
 
 	bool GetSolutionVariableValue(IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue);
 	bool SetSolutionVariableValue(IN LPCTSTR lpszVariableName, IN _variant_t& vtValue);

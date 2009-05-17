@@ -81,7 +81,7 @@ const CommandStruct UninstallCmd(L"Uninstall", L"Uninstall", NULL, L"", CMDBAR_N
 
 // WTL Helper command
 
-const CommandStruct HelperCmd(L"WtlHelper", L"WTL Helper", L"Helps to add message handlers",
+const CommandStruct HelperCmd(L"WtlHelper", STR_WTL_HELPER_W, L"Helps to add message handlers",
 							  L"Text Editor::Ctrl+Alt+W", CMDBAR_TOOLS, 1, false, IDB_BITMAP_WIZARD);
 
 // Options command
@@ -176,115 +176,124 @@ CComPtr<EnvDTE::Project> g_pActiveProject;
 STDMETHODIMP CConnect::OnConnection(IDispatch *pApplication, AddInDesignerObjects::ext_ConnectMode ConnectMode, IDispatch *pAddInInst, SAFEARRAY ** /*custom*/ )
 {
 	HRESULT hr = S_OK;
-	pApplication->QueryInterface(__uuidof(EnvDTE::_DTE), (LPVOID*)&m_pDTE);
-	pAddInInst->QueryInterface(__uuidof(EnvDTE::AddIn), (LPVOID*)&m_pAddInInstance);
-	CCustomProjectSettings::m_sCustomProperties.Init(m_pDTE);
+	do {
+		hr = pApplication->QueryInterface(__uuidof(EnvDTE::_DTE), (LPVOID*)&m_pDTE);
+		if (FAILED(hr)) { 
+			break;
+		}
+		hr = pAddInInst->QueryInterface(__uuidof(EnvDTE::AddIn), (LPVOID*)&m_pAddInInstance);
+		if (FAILED(hr)) { 
+			break;
+		}
 
-	CComPtr<EnvDTE::Commands> pCommands;
-	UICommandBarsPtr pCommandBars;
-	CComPtr<EnvDTE::Command> pCreatedCommand;
-	UICommandBarPtr pHostCmdBar;
+		CCustomProjectSettings::m_sCustomProperties.Init(m_pDTE);
 
-	// When run, the Add-in wizard prepared the registry for the Add-in.
-	// At a later time, the Add-in or its commands may become unavailable for reasons such as:
-	//   1) You moved this project to a computer other than which is was originally created on.
-	//   2) You chose 'Yes' when presented with a message asking if you wish to remove the Add-in.
-	//   3) You add new commands or modify commands already defined.
-	// You will need to re-register the Add-in by building the WtlHelperSetup project,
-	// right-clicking the project in the Solution Explorer, and then choosing install.
-	// Alternatively, you could execute the ReCreateCommands.reg file the Add-in Wizard generated in 
-	// the project directory, or run 'devenv /setup' from a command prompt.
-	//if (ConnectMode == AddInDesignerObjects::ext_cm_Startup || ConnectMode == AddInDesignerObjects::ext_cm_AfterStartup)
-	IfFailGoCheck(m_pDTE->get_Commands(&pCommands), pCommands);
+		CComPtr<EnvDTE::Commands> pCommands;
+		UICommandBarsPtr pCommandBars;
+		CComPtr<EnvDTE::Command> pCreatedCommand;
+		UICommandBarPtr pHostCmdBar;
 
+		// When run, the Add-in wizard prepared the registry for the Add-in.
+		// At a later time, the Add-in or its commands may become unavailable for reasons such as:
+		//   1) You moved this project to a computer other than which is was originally created on.
+		//   2) You chose 'Yes' when presented with a message asking if you wish to remove the Add-in.
+		//   3) You add new commands or modify commands already defined.
+		// You will need to re-register the Add-in by building the WtlHelperSetup project,
+		// right-clicking the project in the Solution Explorer, and then choosing install.
+		// Alternatively, you could execute the ReCreateCommands.reg file the Add-in Wizard generated in 
+		// the project directory, or run 'devenv /setup' from a command prompt.
+		//if (ConnectMode == AddInDesignerObjects::ext_cm_Startup || ConnectMode == AddInDesignerObjects::ext_cm_AfterStartup)
+		hr = m_pDTE->get_Commands(&pCommands); 
+		if (FAILED(hr)) {
+			break;
+		}
 #if defined(_FOR_VS2008)
-	IfFailGoCheck(m_pDTE->get_CommandBars((IDispatch**)&pCommandBars), pCommandBars);
+		hr = m_pDTE->get_CommandBars((IDispatch **)&pCommandBars); 
 #elif defined(_FOR_VS2005)
-	IfFailGoCheck(m_pDTE->get_CommandBars((IDispatch**)&pCommandBars), pCommandBars);
+		hr = m_pDTE->get_CommandBars((IDispatch **)&pCommandBars); 
 #else
-	IfFailGoCheck(m_pDTE->get_CommandBars(&pCommandBars), pCommandBars);
+		hr = m_pDTE->get_CommandBars(&pCommandBars); 
 #endif
+		if (FAILED(hr)) {
+			break;
+		}
 
-	if(ConnectMode == 5) //5 == ext_cm_UISetup
-	{
-		// remove old menus if exists
-		for (size_t i = 0; i < _countof(WtlHelperCmdBars); i++)
+		if(ConnectMode == 5) //5 == ext_cm_UISetup
 		{
-			pHostCmdBar = NULL;
-			if (FAILED(pCommandBars->get_Item(_variant_t(WtlHelperCmdBars[i].lpName), 
-				&pHostCmdBar)) || pHostCmdBar == NULL)
+			// remove old menus if exists
+			for (size_t i = 0; i < _countof(WtlHelperCmdBars); i++)
 			{
-				continue;
-			}
-			
-			UICommandBarControlsPtr pControls;
-			UICommandBarPtr pHelperCmdBar;
-			pHostCmdBar->get_Controls(&pControls);
-			UICommandBarControlPtr pControl;
-			hr = pControls->get_Item(_variant_t(L"WTL Helper"), &pControl);
-			while (pControl != NULL)
-			{
-				UICommandBarPopupControlPtr pPopup; 
-				hr = pControl->QueryInterface(&pPopup);
-				if (pPopup != NULL)
-				{
-					pPopup->get_CommandBar(&pHelperCmdBar);
-					if(pHelperCmdBar != NULL)
-					{
-						hr = pCommands->RemoveCommandBar(pHelperCmdBar);
-					}
-					else
-					{
-						pPopup->Delete();
-					}
+				pHostCmdBar = NULL;
+				hr = pCommandBars->get_Item(_variant_t(WtlHelperCmdBars[i].lpName), &pHostCmdBar);
+				if (FAILED(hr) || pHostCmdBar == NULL) {
+					continue;
 				}
 
-				pControls->get_Item(_variant_t(L"WTL Helper"), &pControl);
+				UICommandBarControlsPtr pControls;
+				UICommandBarPtr pHelperCmdBar;
+				pHostCmdBar->get_Controls(&pControls);
+				UICommandBarControlPtr pControl;
+				hr = pControls->get_Item(_variant_t(STR_WTL_HELPER_W), &pControl);
+				while (pControl != NULL)
+				{
+					UICommandBarPopupControlPtr pPopup; 
+					hr = pControl->QueryInterface(&pPopup);
+					if (pPopup != NULL)
+					{
+						pPopup->get_CommandBar(&pHelperCmdBar);
+						if(pHelperCmdBar != NULL)
+						{
+							hr = pCommands->RemoveCommandBar(pHelperCmdBar);
+						}
+						else
+						{
+							pPopup->Delete();
+						}
+					}
+
+					pControls->get_Item(_variant_t(STR_WTL_HELPER_W), &pControl);
+				}
 			}
 		}
-	}
-	//ATLASSERT(false);
+		//ATLASSERT(false);
 
-	if(ConnectMode != 5)
-	{
-		//create new menus
-		for (size_t i = 0; i < _countof(WtlHelperCmdBars); i++)
+		if(ConnectMode != 5)
 		{
-			pHostCmdBar = NULL;
-			if (FAILED(pCommandBars->get_Item(_variant_t(WtlHelperCmdBars[i].lpName), 
-				&pHostCmdBar)) || pHostCmdBar == NULL)
+			//create new menus
+			for (size_t i = 0; i < _countof(WtlHelperCmdBars); i++)
 			{
-				continue;
+				pHostCmdBar = NULL;
+				hr = pCommandBars->get_Item(_variant_t(WtlHelperCmdBars[i].lpName), &pHostCmdBar);
+				if (FAILED(hr) || pHostCmdBar == NULL) {
+					continue;
+				}
+
+				UICommandBarControlsPtr pBarControls;
+				pHostCmdBar->get_Controls(&pBarControls);
+				UICommandBarPopupControlPtr pPopup;
+
+				_variant_t EmptyParam;
+				EmptyParam.Clear();
+				hr = pBarControls->Add(_variant_t(msoControlPopup), _variant_t(1), EmptyParam, 
+					_variant_t(WtlHelperCmdBars[i].nPos), _variant_t(true), 
+					(UICommandBarControl**)&pPopup);
+				if (FAILED(hr))
+					break;
+				pPopup->put_Caption(_bstr_t(STR_WTL_HELPER_W));
+				pPopup->put_Visible(VARIANT_TRUE);
+				pPopup->get_CommandBar(&WtlHelperCmdBars[i].pCmdBar);
 			}
 
-			UICommandBarControlsPtr pBarControls;
-			pHostCmdBar->get_Controls(&pBarControls);
-			UICommandBarPopupControlPtr pPopup;
+			//create commands
+			for (size_t i = 0; i < _countof(WtlHelperCommands); i++)
+			{
+				CreateCommand(pCommands, WtlHelperCommands[i]);
+			}
 
-			_variant_t EmptyParam;
-			EmptyParam.Clear();
-			hr = pBarControls->Add(_variant_t(msoControlPopup), _variant_t(1), EmptyParam, 
-				_variant_t(WtlHelperCmdBars[i].nPos), _variant_t(true), 
-				(UICommandBarControl**)&pPopup);
-			if (FAILED(hr))
-				break;
-			pPopup->put_Caption(_bstr_t(L"WTL Helper"));
-			pPopup->put_Visible(VARIANT_TRUE);
-			pPopup->get_CommandBar(&WtlHelperCmdBars[i].pCmdBar);
+			CFunctionPage::FillFuncButtons();
 		}
 
-		//create commands
-		for (size_t i = 0; i < _countof(WtlHelperCommands); i++)
-		{
-			CreateCommand(pCommands, WtlHelperCommands[i]);
-		}
-
-		CFunctionPage::FillFuncButtons();
-	}
-
-	return S_OK;
-
-Error:
+	} while (FALSE);
 	return hr;
 }
 
@@ -293,22 +302,26 @@ HRESULT CConnect::CreateCommand(EnvDTE::Commands* pCommands, const CommandStruct
 	CComPtr<EnvDTE::Command> pCreatedCommand;
 	UICommandBarControlPtr pCommandBarControl;
 
-	HRESULT hr = pCommands->AddNamedCommand(m_pAddInInstance, pCmd->Name, pCmd->ButtonText, pCmd->ToolTip, pCmd->bMSOButton, pCmd->lBitmapId, NULL, EnvDTE::vsCommandStatusSupported+EnvDTE::vsCommandStatusEnabled, &pCreatedCommand);
+	HRESULT hr = pCommands->AddNamedCommand(m_pAddInInstance, 
+		pCmd->Name, pCmd->ButtonText, pCmd->ToolTip, pCmd->bMSOButton, pCmd->lBitmapId, NULL, 
+		EnvDTE::vsCommandStatusSupported || EnvDTE::vsCommandStatusEnabled, 
+		&pCreatedCommand);
 	if(SUCCEEDED(hr) && (pCreatedCommand != NULL))
 	{
 		if ((pCmd->iCmdBar != CMDBAR_NO) && (WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar != NULL))
 		{
 			//Add a button to the tools menu bar.
 #if defined(_FOR_VS2008)
-			if (FAILED(pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
-				pCmd->lPos, (IDispatch**)&pCommandBarControl)) || (pCommandBarControl == NULL))
+			hr = pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
+				pCmd->lPos, (IDispatch**)&pCommandBarControl);
 #elif defined(_FOR_VS2005)
-			if (FAILED(pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
-				pCmd->lPos, (IDispatch**)&pCommandBarControl)) || (pCommandBarControl == NULL))
+			hr = pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
+				pCmd->lPos, (IDispatch**)&pCommandBarControl);
 #else
-			if (FAILED(pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
-				pCmd->lPos, &pCommandBarControl)) || (pCommandBarControl == NULL))
+			hr = pCreatedCommand->AddControl(WtlHelperCmdBars[pCmd->iCmdBar].pCmdBar,
+				pCmd->lPos, &pCommandBarControl);
 #endif
+			if (FAILED(hr) || (pCommandBarControl == NULL))
 			{
 				return E_FAIL;
 			}
@@ -376,6 +389,8 @@ STDMETHODIMP CConnect::OnDisconnection(AddInDesignerObjects::ext_DisconnectMode 
 		m_pAddInInstance.Release();
 		_AtlModule.Destroy();
 	}
+
+	CCustomProjectSettings::m_sCustomProperties.Clearup();
 	return hr;
 }
 
@@ -1558,7 +1573,7 @@ EnvDTE::wizardResult CConnect::CreateDialogClass(CComPtr<EnvDTE::Project> pProj,
 eWizardsErrors CConnect::GetWTLDLGWizardPath(CString& Path, LPCTSTR lpMinVersion)
 {
 	CRegKey Key;
-	if (Key.Open(HKEY_LOCAL_MACHINE, _T("Software\\SaloS\\WTL Wizards"), KEY_READ) == ERROR_SUCCESS)
+	if (Key.Open(HKEY_LOCAL_MACHINE, STR_WTL_WIZARDS, KEY_READ) == ERROR_SUCCESS)
 	{
 		ULONG Len;
 		CString RegPath;
@@ -2606,7 +2621,7 @@ void RemoveCommands()
 			if (pControls != NULL)
 			{
 				UICommandBarControlPtr pControl;
-				pControls->get_Item(_variant_t(L"WTL Helper"), &pControl);
+				pControls->get_Item(_variant_t(STR_WTL_HELPER_W), &pControl);
 				if (pControl != NULL)
 				{
 					UICommandBarPopupControlPtr pPopup; 

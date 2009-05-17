@@ -88,6 +88,12 @@ void CCustomProjectSettings::Init(EnvDTE::_DTE* dte)
 	m_pDte = dte;
 }
 
+void CCustomProjectSettings::Clearup(void)
+{
+	m_pDte.Release(); 
+}
+
+
 bool CCustomProjectSettings::GetSolutionVariableValue(
 	IN LPCTSTR lpszVariableName, OUT _variant_t& vtValue)
 {

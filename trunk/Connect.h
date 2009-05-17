@@ -128,13 +128,31 @@ public:
 	CConnect()
 	{
 	}
+
+	virtual ~CConnect()
+	{}
+
+public:
+	static HRESULT WINAPI UpdateRegistry(BOOL bRegister)
+	{
+		OLECHAR szPath[MAX_PATH] = { 0 };
+		GetModuleFileNameW(_AtlModule.GetResourceInstance(), szPath, _countof(szPath));
+		PathRemoveFileSpecW(szPath); 
+		OLECHAR szShortName[MAX_PATH] = { 0 };
+		GetShortPathNameW(szPath, szShortName, _countof(szShortName));
+		_ATL_REGMAP_ENTRY rm[] = { 
+			{ OLESTR("ModulePath"), szShortName },
+			{ NULL,NULL },
+		};
 #if defined(_FOR_VS2008)
-	DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN9)
+		return _AtlModule.UpdateRegistryFromResource(IDR_ADDIN9, bRegister, rm);
 #elif defined(_FOR_VS2005)
-	DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN8)
+		return _AtlModule.UpdateRegistryFromResource(IDR_ADDIN8, bRegister, rm);
 #else
-	DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN)
+		return _AtlModule.UpdateRegistryFromResource(IDR_ADDIN, bRegister, rm);
 #endif
+	}
+	// DECLARE_REGISTRY_RESOURCEID(IDR_ADDIN)
 
 	DECLARE_NOT_AGGREGATABLE(CConnect)
 

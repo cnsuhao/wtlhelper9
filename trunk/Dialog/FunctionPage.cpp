@@ -136,9 +136,9 @@ void CFunctionPage::FillTreeView()
 {
 	MessageStruct* pMes = CMessageManager::m_sHandlerManager.GetRootMessage();
 	ATLASSERT(pMes);
-	if (!pMes)
-		return;
-	FillTreeView(NULL, pMes);
+	if (pMes) { 
+		FillTreeView(NULL, pMes);
+	}
 }
 
 CString CFunctionPage::LoadToolTip(int ID)

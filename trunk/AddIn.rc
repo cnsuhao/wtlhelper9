@@ -684,7 +684,7 @@ END
 // Generated from the TEXTINCLUDE 3 resource.
 //
 #if !defined(_FOR_VS2005) && !defined(_FOR_VS2008) 
-2 RT_MANIFEST "res\\WtlHelper.dll.manifest"
+//2 RT_MANIFEST "res\\WtlHelper.dll.manifest"
 #endif
 1 TYPELIB "AddIn.tlb"
 /////////////////////////////////////////////////////////////////////////////

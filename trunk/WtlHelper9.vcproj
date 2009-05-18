@@ -566,6 +566,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\imports.h"
+				>
+			</File>
+			<File
 				RelativePath=".\InsertPoint.h"
 				>
 			</File>

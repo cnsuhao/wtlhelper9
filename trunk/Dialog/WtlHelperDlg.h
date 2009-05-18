@@ -76,12 +76,14 @@ public:
 	CSmartAtlArray<InsDelPoints>* m_pModifications;
 	CResourceManager* m_pResManager;
 	int m_iActivePage;
+	HICON m_hIconSmall;
 
     BEGIN_MSG_MAP(CWtlHelperDlg)
 		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_GETMINMAXINFO, OnGetMinMaxInfo)
+		MESSAGE_HANDLER(WM_NCDESTROY, OnWmNcDestroy)
 
         COMMAND_HANDLER(IDOK, BN_CLICKED, OnClickedOK)
         COMMAND_HANDLER(IDCANCEL, BN_CLICKED, OnClickedCancel)
@@ -138,6 +140,7 @@ public:
 	LRESULT OnTtnGetDispInfo(int idCtrl, LPNMHDR pnmh, BOOL& bHandled);
 
 	LRESULT OnSetModified(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+	LRESULT OnWmNcDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 };
 
 

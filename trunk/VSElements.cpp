@@ -133,84 +133,120 @@ bool VSBase::RetrieveTemplateParameters()
 
 CString VSClass::GetDialogID(EnvDTE::CodeElement * pElem)
 {
-	HRESULT hr = E_FAIL;
-	_bstr_t ElemName;
-	CComPtr<VCCodeModelLibrary::VCCodeClass> pClass;
-	hr = pElem->QueryInterface(&pClass);
-	ATLASSERT(pClass != NULL);
-	pClass->get_Name(ElemName.GetAddress());
+	CString strResult; 
 
-	for (size_t i = 0; i < _AtlModule.m_DialogClasses.GetCount(); i++)
-	{
-		if (_bstr_t(_AtlModule.m_DialogClasses.GetAt(i)) == ElemName)
-			return CString();
-	}
+	do {
+		HRESULT hr = E_FAIL;
 
-	CComPtr<EnvDTE::CodeElements> pEnums;
-	pClass->get_Enums(&pEnums);
-	if (pEnums)
-	{		
-		long Count;
-		pEnums->get_Count(&Count);
-		for (long i = 1; i <= Count; i++)
+		CComPtr<VCCodeModelLibrary::VCCodeClass> pClass;
+		hr = pElem->QueryInterface(&pClass);
+		if (FAILED(hr) || pClass==NULL) {
+			break;
+		}
+
+		CComBSTR ElemName;
+		hr = pClass->get_Name(&ElemName);
+		if (FAILED(hr)) {
+			break;
+		}
+
+		for (size_t i = 0; i < _AtlModule.m_DialogClasses.GetCount(); i++)
 		{
-			CComPtr<EnvDTE::CodeElement> pEnumElem;
-			pEnums->Item(_variant_t(i), &pEnumElem);
-			ATLASSERT(pEnumElem != NULL);
-			CComPtr<VCCodeModelLibrary::VCCodeEnum> pEnum;
-			hr = pEnumElem->QueryInterface(&pEnum);
-			ATLASSERT(pEnum != NULL);
-			CComPtr<EnvDTE::CodeElements> pMembers;
-			pEnum->get_Members(&pMembers);
-			if (pMembers == NULL)
-				continue;
-			CComPtr<EnvDTE::CodeElement> pMemberElem;
-			CComPtr<EnvDTE::CodeVariable> pMemberVar;
-			pMembers->Item(_variant_t(L"IDD"), &pMemberElem);
-			hr = pMemberElem->QueryInterface(&pMemberVar);
-			if (pMemberVar != NULL)
+			if (ElemName == (LPCTSTR)_AtlModule.m_DialogClasses.GetAt(i))
+				return strResult;
+		}
+
+		CComPtr<EnvDTE::CodeElements> pEnums;
+		hr = pClass->get_Enums(&pEnums);
+		if (SUCCEEDED(hr) && pEnums)
+		{
+			long Count = 0;
+			hr = pEnums->get_Count(&Count);
+			for (long i = 1; i <= Count; i++)
 			{
-				_variant_t vtValue;
-				pMemberVar->get_InitExpression(&vtValue);
-				CString Value = vtValue;
-				return Value;
+				CComPtr<EnvDTE::CodeElement> pEnumElem;
+				hr = pEnums->Item(_variant_t(i), &pEnumElem);
+				if (FAILED(hr) || pEnumElem == NULL) {
+					continue;
+				}
+
+				CComPtr<VCCodeModelLibrary::VCCodeEnum> pEnum;
+				hr = pEnumElem->QueryInterface(&pEnum);
+				if (FAILED(hr) || pEnum==NULL) {
+					continue;
+				}
+
+				CComPtr<EnvDTE::CodeElements> pMembers;
+				hr = pEnum->get_Members(&pMembers);
+				if (FAILED(hr) || pMembers == NULL) {
+					continue;
+				}
+
+				CComPtr<EnvDTE::CodeElement> pMemberElem;
+				hr = pMembers->Item(_variant_t(L"IDD"), &pMemberElem);
+				if (FAILED(hr) || pMemberElem==NULL) {
+					continue;
+				}
+
+				CComPtr<EnvDTE::CodeVariable> pMemberVar;
+				hr = pMemberElem->QueryInterface(&pMemberVar);
+				if (FAILED(hr) || pMemberVar==NULL) {
+					continue;
+				}
+
+				CComVariant vtValue;
+				hr = pMemberVar->get_InitExpression(&vtValue);
+				if (FAILED(hr)) {
+					continue;
+				}
+
+				strResult = vtValue;
+				return strResult;
 			}
 		}
-	}
-	//не нашли в этом классе. поищем в предках
-	CComPtr<EnvDTE::CodeElements> pBases;
-	pClass->get_Bases(&pBases);
-	long BaseCount;
-	pBases->get_Count(&BaseCount);
-	for (long i1 = 1; i1 <= BaseCount; i1++)
-	{
-		CComPtr<EnvDTE::CodeElement> pBaseElem;
-		pBases->Item(_variant_t(i1), &pBaseElem);
-		if (pBaseElem != NULL)
+
+		//не нашли в этом классе. поищем в предках
+		CComPtr<EnvDTE::CodeElements> pBases;
+		hr = pClass->get_Bases(&pBases);
+		if (FAILED(hr)) {
+			break;
+		}
+
+		long BaseCount = 0;
+		pBases->get_Count(&BaseCount);
+		for (long i1 = 1; i1 <= BaseCount; i1++)
 		{
+			CComPtr<EnvDTE::CodeElement> pBaseElem;
+			hr = pBases->Item(_variant_t(i1), &pBaseElem);
+			if (FAILED(hr) || pBaseElem==NULL) {
+				continue;
+			}
+
 			CComPtr<VCCodeModelLibrary::VCCodeBase> pBase;
 			hr = pBaseElem->QueryInterface(&pBase);
-			if (pBase != NULL)
-			{
-				CComPtr<EnvDTE::CodeType> pType;
-				hr = pBase->get_Class(&pType);
-				if(pType != NULL)
-				{
-					// CComPtr<VCCodeModelLibrary::VCCodeClass> pBaseClass;
-					CComPtr<EnvDTE::CodeElement> pBaseClass;
-					hr = pType->QueryInterface(&pBaseClass);
-					if (pBaseClass != NULL)
-					{
-						CString id = GetDialogID(pBaseClass);
-						if (!id.IsEmpty())
-							return id;
-					}
-				}
+			if (FAILED(hr) || pBase==NULL) {
+				continue;
 			}
+
+			CComPtr<EnvDTE::CodeType> pType;
+			hr = pBase->get_Class(&pType);
+			if (FAILED(hr) || pType==NULL) {
+				continue;
+			}
+
+			// CComPtr<VCCodeModelLibrary::VCCodeClass> pBaseClass;
+			CComPtr<EnvDTE::CodeElement> pBaseClass;
+			hr = pType->QueryInterface(&pBaseClass);
+			if (FAILED(hr) || pBaseClass==NULL) {
+				continue;
+			}
+
+			strResult = GetDialogID(pBaseClass);
+			if (!strResult.IsEmpty())
+				return strResult;
 		}
-	}
-	
-	return CString();
+	} while (FALSE);
+	return strResult;
 }
 
 bool VSClass::FindPlaceForNewVar(_variant_t& Pos, EnvDTE::vsCMAccess NeededAccess)

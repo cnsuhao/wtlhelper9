@@ -154,7 +154,7 @@ HRESULT InsertPointDDX::Insert(VSClass* pClass, int Step)
 			for (size_t i = 0; i < pClass->Functions.GetCount(); i++)
 			{
 				VSFunction* pFunc = pClass->Functions[i];
-				if (pFunc->Kind == EnvDTE::vsCMFunctionConstructor)
+				if ((pFunc->Kind & EnvDTE::vsCMFunctionConstructor) == EnvDTE::vsCMFunctionConstructor)
 				{
 					if ((pClass->Functions[i]->pElement != NULL))
 					{

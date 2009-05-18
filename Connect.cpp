@@ -1932,34 +1932,58 @@ int CConnect::FindClassByDlgID(ClassVector Classes, CString DialogID)
 		pVCClass = Classes[i]->pElement;
 		CComPtr<EnvDTE::CodeElements> pEnums;
 		hr = pVCClass->get_Enums(&pEnums);
-		long Count;
+		if (FAILED(hr) || pEnums==NULL) {
+			continue;
+		}
+
+		long Count = 0;
 		pEnums->get_Count(&Count);
 		for (long j = 1; j <= Count; j++ )
 		{
 			CComPtr<EnvDTE::CodeElement> pElem;
-			pEnums->Item(_variant_t(j), &pElem);
+
+			hr = pEnums->Item(_variant_t(j), &pElem);
+			ATLASSERT(SUCCEEDED(hr));
+			if (FAILED(hr)) {
+				continue;
+			}
+
 			CComPtr<VCCodeModelLibrary::VCCodeEnum> pEnum; 
 			hr = pElem->QueryInterface(&pEnum);
-			if (pEnum != NULL)
+			ATLASSERT(SUCCEEDED(hr));
+			if (FAILED(hr) || pEnum == NULL) {
+				continue;
+			}
+
+			CComPtr<EnvDTE::CodeElements> pMembers; 
+			hr = pEnum->get_Members(&pMembers);
+			ATLASSERT(SUCCEEDED(hr));
+			if (FAILED(hr) || pEnum == NULL) {
+				continue;
+			}
+
+			CComPtr<EnvDTE::CodeVariable> pMember;
+			pElem.Release();
+			hr = pMembers->Item(_variant_t(L"IDD"), &pElem);
+			// ATLASSERT(SUCCEEDED(hr));
+			if (FAILED(hr)) {
+				continue;
+			}
+
+			hr = pElem->QueryInterface(&pMember);
+			ATLASSERT(SUCCEEDED(hr));
+			if (FAILED(hr) || pMember==NULL) {
+				continue;
+			}
+
+			_bstr_t Value;
+			_variant_t vt;
+			pMember->get_InitExpression(&vt);
+			Value = vt;
+			if ((LPCTSTR)Value == DialogID)
 			{
-				CComPtr<EnvDTE::CodeElements> pMembers; 
-				hr = pEnum->get_Members(&pMembers);
-				CComPtr<EnvDTE::CodeVariable> pMember;
-				pElem.Release();
-				pMembers->Item(_variant_t(L"IDD"), &pElem);
-				hr = pElem->QueryInterface(&pMember);
-				if (pMember != NULL)
-				{
-					_bstr_t Value;
-					_variant_t vt;
-					pMember->get_InitExpression(&vt);
-					Value = vt;
-					if ((LPCTSTR)Value == DialogID)
-					{
-						iDlgClass = (int)i;
-						break;
-					}
-				}
+				iDlgClass = (int)i;
+				return iDlgClass;
 			}
 		}
 	}

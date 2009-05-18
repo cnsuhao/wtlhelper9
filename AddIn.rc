@@ -7,8 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "winres.h"
-
+#include "winres.h"
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -601,8 +600,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,8,0
- PRODUCTVERSION 1,1,8,0
+ FILEVERSION 1,1,9,0
+ PRODUCTVERSION 1,1,9,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -619,25 +618,25 @@ BEGIN
         BEGIN
             VALUE "Comments", "Helps add message handlers for WTL"
             VALUE "CompanyName", "Sergey Solozhentsev"
-            VALUE "FileDescription", "Addin for Microsoft Visual Studio .NET 2003 and 2005"
-            VALUE "FileVersion", "1, 1, 8, 0"
+            VALUE "FileDescription", "Addin for Microsoft Visual Studio .NET 2003 and 2005 and 2008"
+            VALUE "FileVersion", "1, 1, 9, 0"
             VALUE "InternalName", "WtlHelper.dll"
-            VALUE "LegalCopyright", "Copyright (c) 2004 Sergey Solozhentsev. All rights reserved."
+            VALUE "LegalCopyright", "Copyright (c) 2009 Sergey Solozhentsev. All rights reserved."
             VALUE "OriginalFilename", "WtlHelper.dll"
             VALUE "ProductName", "WTL Helper"
-            VALUE "ProductVersion", "1, 1, 8, 0"
+            VALUE "ProductVersion", "1, 1, 9, 0"
         END
         BLOCK "041904b0"
         BEGIN
             VALUE "Comments", "Iiiiaaao anoaaeyou ia?aaio?eee niiauaiee e DDX ia?aiaiiua aey WTL"
             VALUE "CompanyName", "Na?aae Niei?aioaa"
             VALUE "FileDescription", "Ieaaei aey  Microsoft Visual Studio .NET 2003 e 2005"
-            VALUE "FileVersion", "1, 1, 8, 0"
+            VALUE "FileVersion", "1, 1, 9, 0"
             VALUE "InternalName", "WtlHelper.dll"
-            VALUE "LegalCopyright", "Copyright (C) 2004 Na?aae Niei?aioaa. Ana i?aaa caueuaiu"
+            VALUE "LegalCopyright", "Copyright (C) 2009  Na?aae Niei?aioaa. Ana i?aaa caueuaiu"
             VALUE "OriginalFilename", "WtlHelper.dll"
             VALUE "ProductName", "WTL Helper"
-            VALUE "ProductVersion", "1, 1, 8, 0"
+            VALUE "ProductVersion", "1, 1, 9, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -684,7 +683,7 @@ END
 // Generated from the TEXTINCLUDE 3 resource.
 //
 #if !defined(_FOR_VS2005) && !defined(_FOR_VS2008) 
-//2 RT_MANIFEST "res\\WtlHelper.dll.manifest"
+2 RT_MANIFEST "res\\WtlHelper.dll.manifest"
 #endif
 1 TYPELIB "AddIn.tlb"
 /////////////////////////////////////////////////////////////////////////////

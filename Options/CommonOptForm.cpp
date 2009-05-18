@@ -9,7 +9,7 @@ extern LPCTSTR g_MainDlgName;
 extern LPCTSTR RegPath;
 
 // CCommonOptForm
-CCommonOptForm::CCommonOptForm() : m_bSavePreviousPane(false), m_eWTLVersion(eWTL75)
+CCommonOptForm::CCommonOptForm() : m_bSavePreviousPane(false), m_eWTLVersion(eWTL80)
 {
 }
 
@@ -43,6 +43,7 @@ LRESULT CCommonOptForm::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BO
 	CComboBox ComboVersion = GetDlgItem(IDC_COMBO_WTLVERSION);
 	ComboVersion.AddString(_T("WTL 7.1"));
 	ComboVersion.AddString(_T("WTL 7.5"));
+	ComboVersion.AddString(_T("WTL 8.0"));
 	ComboVersion.SetCurSel(m_eWTLVersion);
 
 	DoDataExchange();

@@ -75,6 +75,10 @@ LRESULT CWtlHelperDlg::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 {
 	START_PROFILE(MainDlg_Init);
 
+	m_hIconSmall = (HICON)::LoadImage(_AtlModule.GetResourceInstance(), MAKEINTRESOURCE(IDI_ICON_MAIN), 
+		IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+	SetIcon(m_hIconSmall, FALSE);
+
 	LoadSettings();
 	CenterWindow();
 	DWORD dwStyle = ATL_SIMPLE_TOOLBAR_STYLE | TBSTYLE_FLAT;
@@ -229,5 +233,12 @@ LRESULT CWtlHelperDlg::OnTtnGetDispInfo(int idCtrl, LPNMHDR pnmh, BOOL& bHandled
 LRESULT CWtlHelperDlg::OnSetModified(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 	GetDlgItem(IDC_BUTTON_APPLY).EnableWindow((BOOL)wParam);
+	return 0;
+}
+
+LRESULT CWtlHelperDlg::OnWmNcDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	bHandled = FALSE;
+	::DestroyIcon(m_hIconSmall);
 	return 0;
 }
